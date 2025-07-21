@@ -1,0 +1,29 @@
+name = "PacemakerMalfunction"
+uuid = "382f4444-83b5-4cb7-916f-09b76ed28949"
+authors = ["Razheva Elena <razh348@gmail.com> and contributors"]
+version = "1.0.0-DEV"
+
+[deps]
+DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
+Descriptors = "b2dd10be-c0b5-41fc-bf7d-fdb86be5b335"
+FileUnv_jll = "c10d0ea1-10c0-5fab-a796-b821f293b8d8"
+FileUtils = "61402b12-eb4b-4f0c-a04f-adfcfe5d14e4"
+IBoxAccess = "1607262a-405a-4f9a-89bc-45a61e12db11"
+wfdb_wrapper_jll = "cfa65b43-6878-5963-b59c-e7edc60d5dc9"
+
+[sources]
+Descriptors = {url = "https://github.com/IncartStudents/Descriptors.jl"}
+FileUnv_jll = {url = "https://github.com/a-mikhaylov/FileUnv_jll.jl.git"}
+FileUtils = {url = "https://github.com/IncartStudents/FileUtils.jl"}
+IBoxAccess = {url = "https://github.com/IncartStudents/IBoxAccess.jl"}
+wfdb_wrapper_jll = {url = "https://github.com/sairus7/wfdb_wrapper_jll.jl.git"}
+
+[compat]
+DataFrames = "1.7.0"
+julia = "1.6.7"
+
+[extras]
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[targets]
+test = ["Test"]

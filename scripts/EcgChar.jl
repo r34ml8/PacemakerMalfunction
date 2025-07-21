@@ -4,7 +4,7 @@ import FileUtils.StdEcgDbAPI as API
 include("Reading.jl")
 
 mutable struct EcgRecord
-    mode::Int #1 - V, 2 - A, 3 - A & V
+    mode::Int #1 - VVI, 2 - AAI, 3 - DDD
     baseHRPoint::Int
     SAWB::BitArray
     VF::BitArray
@@ -12,60 +12,39 @@ mutable struct EcgRecord
     intervalAV::Union{Vector{Int}, Nothing}
     maxAV::Union{Int, Nothing}
     CC::Vector{Int}
+    complexes::Vector{Union{Complex, Nothing}}
 
-    function EcgRecord(filename::String, author::String)
-        mkpBase = Reading.get_data_from(filename, "mkp"; author)
-        mode, baseHRPoint, intervalAV = Reading.get_data_from(filename, "hdr")
+    function EcgRecord(mkpBase::API.StdMkp, _mode::Int, _baseHRPoint::Int, _intervalAV::Union{Vector{Int}, Nothing})
+        _maxAV = isnothing(_intervalAV) ? nothing : _intervalAV[2]
+
+        n = length(_QRS_form)
+        _SAWB, _VF, _C = BitArraySpawn(n, mkpBase.QRS_form)
+        _CC = CCArraySpawn(mkpBase.stimpos)
+
+        # _complexes = Union{Complex, Nothing}
+        # TODO: генерация вектора комплексов
         
-        maxAV = nothing
-
-        if (!isnothing(intervalAV))
-            maxAV = intervalAV[2]
-        end
-
-        SAWB, VF, C = BitArraySpawn(mkpBase.QRS_form)
-        CC = CCArraySpawn(mkpBase.stimpos)
-        
-        return new(mode, baseHRPoint, SAWB, VF, C, intervalAV, maxAV, CC)
+        return new(_mode, _baseHRPoint, _SAWB, _VF, _C, _intervalAV, _maxAV, _CC)
     end
-    # function EcgRecord
+
 end
 
-
-# function EcgRecord()
-#     return new(obj)
-# end
-
-# function EcgRecord(filename::String, author::String)
-#     obj = EcgRecord()
-
-#     mkpBase = Reading.get_data_from(filename; author=author)
-#     obj.mode, obj.baseHRPoint, obj.intervalAV = Reading.get_data_from(filename; marker="hdr")
-
-#     if (obj.intervalAV != Nothing)
-#         obj.maxAV = obj.intervalAV[2]
-#     end
-
-#     obj.SAWB, obj.VF, obj.C = BitArraySpawn(mkpBase.QRS_form)
-#     obj.CC = CCArraySpawn(mkpBase.stimpos)
-    
-#     return obj
-# end
-
-function BitArraySpawn(_QRS_form::Vector{String})
-    n = length(_QRS_form)
+function BitArraySpawn(n::Int, _QRS_form::Vector{String})
     _SAWB = BitArray(undef, n)
     _VF = BitArray(undef, n)
     _C = BitArray(undef, n)
     
     for i in 1:n
         QRS = _QRS_form[i]
-        if (QRS[1] == "V" || QRS[1] == "F")
+        println(QRS[1])
+        if (QRS[1] == 'V') || (QRS[1] == 'F')
             _VF[i] = 1
-        elseif (QRS[1] == "C")
+            println("true")
+        elseif QRS[1] == 'C'
             _C[i] = 1
         else
             _SAWB[i] = 1
+            println("false")
         end
     end
 

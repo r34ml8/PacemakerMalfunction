@@ -28,12 +28,12 @@ function hdr_reading(filepath_hdr)
         mode = 1
     end
 
-    HRPoint = parse(Int, split(data[2], "/")[1])
-    HRPoint = parse(Int, HRPoint / 60 * 1000)
+    base = parse(Int, split(data[2], "/")[1])
+    base = Int(base / 60 * 1000)
 
     intervalAV = (mode == 3 && length(data) == 3) ? parse.(Int, split(data[3][4:end], "-")) : nothing
 
-    return mode, HRPoint, intervalAV
+    return mode, base, intervalAV
 end
 
 end

@@ -1,7 +1,7 @@
 # using DataFrames
 include("Reading.jl")
 include("EcgChar.jl")
-
+using .EcgChar
 import FileUtils
 
 filenames_array = readlines("C:\\Users\\user\\course\\STDECGDB\\dbstate\\#stim.txt")
@@ -10,26 +10,39 @@ path = "C:\\Users\\user\\course\\STDECGDB"
 
 filename = "ME1299130220184331_3"
 
-typeof(mkpBase)
 mkpBase = Reading.get_data_from(filename, "mkp"; author)
-mode, baseHRPoint, intervalAV = Reading.get_data_from(filename, "hdr")
-
-length(mkpBase.stimpos)
-
+mode, base, _ = Reading.get_data_from(filename, "hdr")
 
 # _, hdrstruct = Reading.get_data_from(filenames_array[5], marker="hdr")
+record = EcgChar.EcgRecord(mkpBase, mode, base)
+EcgChar.analyzeVVI(record)
+
+mkpBase.recordname
+Int(5.0)
+i = 1.5
+if !(i in (1, 2))
+    println(i)
+end
+
+n = 5
+for i in 0:-1:1
+    println(i)
+end
 
 # hdrstruct.stimulus
 # hdrstruct.fs_base
 
-_vec = abs.(mkpBase.stimpos[1] .- mkpBase.QRS_onset)
-argmax(_vec)
+# _vec = abs.(mkpBase.stimpos[1] .- mkpBase.QRS_onset)
+# argmax(_vec)
 
-record = EcgChar.EcgRecord(mkpBase, mode, baseHRPoint, intervalAV)
-length(record.CC)
-println.(mkpBase.QRS_onset)
-mkpBase.QRS_end
-println.(mkpBase.stimpos)
+
+_vec = getproperty.(getproperty.(record.stimuls, :complex), :index)
+
+println.(getproperty.(record.stimuls, :index), " ", getproperty.(getproperty.(record.stimuls, :complex), :index))
+
+# println.(mkpBase.QRS_onset)
+# mkpBase.QRS_end
+# println.(mkpBase.stimpos)
 # n = length(mkpBase.QRS_form)
 # _SAWB = BitArray(undef, n)
 # _VF = BitArray(undef, n)
@@ -68,10 +81,10 @@ println.(mkpBase.stimpos)
 # table_example = FileUtils.readtable(filepath_hdr, filepath_bin)
 # mkpexample.stimtype
 
-function _hdr_reading(i)
-    filepath_hdr = joinpath(path, "bin",  a[i] * ".hdr")
-    return Reading.hdr_reading(filepath_hdr)
-end
+# function _hdr_reading(i)
+#     filepath_hdr = joinpath(path, "bin",  a[i] * ".hdr")
+#     return Reading.hdr_reading(filepath_hdr)
+# end
 
-_hdr_reading(7)
+# _hdr_reading(7)
 

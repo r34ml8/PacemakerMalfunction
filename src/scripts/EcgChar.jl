@@ -2,40 +2,83 @@ module EcgChar
 
 import FileUtils.StdEcgDbAPI as API
 
-mutable struct Complex
+abstract type Signal end
+
+mutable struct Complex <: Signal
     index::Int
     Z::Bool
-    pos_onset::Int
+    position::Int
     pos_end::Int
+    RR::Union{Int, Nothing}
 
     function Complex(mkpBase::API.StdMkp, _index::Int)
         _Z = mkpBase.QRS_form[_index] == "Z" ? true : false
         _pos_onset = mkpBase.QRS_onset[_index]
         _pos_end = mkpBase.QRS_end[_index]
-        
-        return new(_index, _Z, _pos_onset, _pos_end)
+        _RR = _index > 1 ? _pos_onset - mkpBase.QRS_onset[_index - 1] : nothing
+
+        return new(_index, _Z, _pos_onset, _pos_end, _RR)
     end
 end
 
-mutable struct Stimul
+mutable struct Stimul <: Signal
     index::Int
     type::String
     position::Int
     complex::Complex
     satisfy::Bool
+    malfunction::Malfunctions
 
-    function Stimul(mkpBase::API.StdMkp, _index::Int, complexes::Vector{Complex})
+    function Stimul(mkpBase::API.StdMkp, _index::Int, complexes::Vector{Complex}, mode::Int)
         _type = mkpBase.stimtype[_index]
         _position = mkpBase.stimpos[_index]
         _complex = findComplex(_position, complexes)
 
-        return new(_index, _type, _position, _complex, true)
+        if mode == 3
+            _malfunction = MalfunctionsDDD()
+        elseif mode == 2
+            _malfunction = MalfunctionsAAI()
+        else
+            _malfunction = MalfunctionsVVI()
+        end
+
+        return new(_index, _type, _position, _complex, true, _malfunction)
     end
 end
 
-#пока тут привязка к ближайшему
+abstract type Malfunctions end
+
+@kwdef mutable struct MalfunctionsVVI <: Malfunctions
+    normal::Bool = false
+    undersensing::Bool = false
+    exactlyUndersensing::Bool = false
+    oversensing::Bool = false
+    hysteresis::Bool = false
+    noAnswer::Bool = false
+    unrelized::Bool = false
+end
+
+@kwdef mutable struct MalfunctionsAAI <: Malfunctions
+end
+
+@kwdef mutable struct MalfunctionsDDD <: Malfunctions
+end
+
+"""
+malfunction: расшифровка битов
+1 - норма
+2 - гипосенсинг по желудочковому каналу
+3 - точно гипосенсинг по желудочковому каналу
+4 - гиперсенсинг по желудочковому каналу
+5 - гистерезис
+6 - желудочковый стимул без ответа
+7 - нереализованный желудочковый стимул
+"""
+
+# пока тут привязка к ближайшему
+# TODO: сделать привязку к ближайшему справа
 function findComplex(stimulPosition::Int, complexes::Vector{Complex})
-    vectorDiff = abs.(stimulPosition .- getproperty.(complexes, :pos_onset))
+    vectorDiff = abs.(stimulPosition .- getproperty.(complexes, :position))
     return complexes[argmin(vectorDiff)]
 end
 
@@ -55,7 +98,7 @@ mutable struct EcgRecord
         n = length(mkpBase.stimtype)
         _stimuls = Vector{Stimul}(undef, n)
         for i in 1:n
-            _stimuls[i] = Stimul(mkpBase, i, _complexes)
+            _stimuls[i] = Stimul(mkpBase, i, _complexes, _mode)
         end
         
         return new(_mode, _base, _complexes, _stimuls)

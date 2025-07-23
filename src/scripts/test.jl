@@ -17,6 +17,32 @@ mode, base, _ = Reading.get_data_from(filename, "hdr")
 record = EcgChar.EcgRecord(mkpBase, mode, base)
 EcgChar.analyzeVVI(record)
 
+abstract type child end
+
+struct daughter <: child
+    age
+end
+
+struct son <: child
+    age
+end
+
+d = daughter(5)
+s = son(2)
+
+function showAge(ch::child)
+    println(ch.age)
+end
+
+showAge(s)
+
+a = 3
+_v = [a - 1, a + 1]
+
+_v .-= 1
+
+g = a > 5
+
 mkpBase.recordname
 Int(5.0)
 i = 1.5

@@ -1,21 +1,38 @@
 # using DataFrames
-include("Reading.jl")
-include("EcgChar.jl")
-using .EcgChar
-import FileUtils
+include("PacemakerMalfunction.jl")
+import PacemakerMalfunction as PM
 
 filenames_array = readlines("C:\\Users\\user\\course\\STDECGDB\\dbstate\\#stim.txt")
 author = "v2_0_0_dev"
 path = "C:\\Users\\user\\course\\STDECGDB"
 
-filename = "ME1299130220184331_3"
+vvi_fn_arr = String[]
 
-mkpBase = Reading.get_data_from(filename, "mkp"; author)
-mode, base, _ = Reading.get_data_from(filename, "hdr")
+for fn in filenames_array
+    m, _, _ = PM.get_data_from(fn, "hdr")
+    if m == 1
+        push!(vvi_fn_arr, fn)
+    end
+end
 
+# filename = "ME1299130220184331_3"
+
+# supertype(Int)
+
+# PM.mode
+for fn in vvi_fn_arr
+    println(fn)
+    mkpBase = PM.get_data_from(fn, "mkp"; author)
+    PM.mode, PM.base, _ = PM.get_data_from(fn, "hdr")
+    PM.complexes, PM.stimuls = PM.baseParams(mkpBase, PM.mode)
 # _, hdrstruct = Reading.get_data_from(filenames_array[5], marker="hdr")
-record = EcgChar.EcgRecord(mkpBase, mode, base)
-EcgChar.analyzeVVI(record)
+    PM.analyzeVVI()
+    println()
+end
+
+
+print(1, " ")
+print(2)
 
 abstract type child end
 

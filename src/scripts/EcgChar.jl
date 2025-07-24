@@ -1,48 +1,19 @@
-module EcgChar
-
-import FileUtils.StdEcgDbAPI as API
-
 abstract type Signal end
 
 mutable struct Complex <: Signal
     index::Int
-    Z::Bool
+    type::String
     position::Int
     pos_end::Int
     RR::Union{Int, Nothing}
 
     function Complex(mkpBase::API.StdMkp, _index::Int)
-        _Z = mkpBase.QRS_form[_index] == "Z" ? true : false
+        _type = mkpBase.QRS_form[_index]
         _pos_onset = mkpBase.QRS_onset[_index]
         _pos_end = mkpBase.QRS_end[_index]
         _RR = _index > 1 ? _pos_onset - mkpBase.QRS_onset[_index - 1] : nothing
 
-        return new(_index, _Z, _pos_onset, _pos_end, _RR)
-    end
-end
-
-mutable struct Stimul <: Signal
-    index::Int
-    type::String
-    position::Int
-    complex::Complex
-    satisfy::Bool
-    malfunction::Malfunctions
-
-    function Stimul(mkpBase::API.StdMkp, _index::Int, complexes::Vector{Complex}, mode::Int)
-        _type = mkpBase.stimtype[_index]
-        _position = mkpBase.stimpos[_index]
-        _complex = findComplex(_position, complexes)
-
-        if mode == 3
-            _malfunction = MalfunctionsDDD()
-        elseif mode == 2
-            _malfunction = MalfunctionsAAI()
-        else
-            _malfunction = MalfunctionsVVI()
-        end
-
-        return new(_index, _type, _position, _complex, true, _malfunction)
+        return new(_index, _type, _pos_onset, _pos_end, _RR)
     end
 end
 
@@ -64,6 +35,32 @@ end
 @kwdef mutable struct MalfunctionsDDD <: Malfunctions
 end
 
+mutable struct Stimul <: Signal
+    index::Int
+    type::String
+    position::Int
+    complex::Complex
+    satisfy::Bool
+    malfunction::Malfunctions
+
+    function Stimul(mkpBase::API.StdMkp, _index::Int, complexes::Vector{Complex}, mode::Int)
+        _type = "V"
+        # _type = mkpBase.stimtype[_index]
+        _position = mkpBase.stimpos[_index]
+        _complex = findComplex(_position, complexes)
+
+        if mode == 3
+            _malfunction = MalfunctionsDDD()
+        elseif mode == 2
+            _malfunction = MalfunctionsAAI()
+        else
+            _malfunction = MalfunctionsVVI()
+        end
+
+        return new(_index, _type, _position, _complex, true, _malfunction)
+    end
+end
+
 """
 malfunction: расшифровка битов
 1 - норма
@@ -82,35 +79,27 @@ function findComplex(stimulPosition::Int, complexes::Vector{Complex})
     return complexes[argmin(vectorDiff)]
 end
 
-mutable struct EcgRecord
-    mode::Int #1 - VVI, 2 - AAI, 3 - DDD
-    base::Int
-    complexes::Vector{Complex}
-    stimuls::Vector{Stimul}
-
-    function EcgRecord(mkpBase::API.StdMkp, _mode::Int, _base::Int)
-        n = length(mkpBase.QRS_form)
-        _complexes = Vector{Complex}(undef, n)
-        for i in 1:n
-            _complexes[i] = Complex(mkpBase, i)
-        end
-
-        n = length(mkpBase.stimtype)
-        _stimuls = Vector{Stimul}(undef, n)
-        for i in 1:n
-            _stimuls[i] = Stimul(mkpBase, i, _complexes, _mode)
-        end
-        
-        return new(_mode, _base, _complexes, _stimuls)
+function baseParams(mkpBase::API.StdMkp, mode::Int)
+    n = length(mkpBase.QRS_form)
+    _complexes = Vector{Complex}(undef, n)
+    for i in 1:n
+        _complexes[i] = Complex(mkpBase, i)
     end
+
+    n = length(mkpBase.stimtype)
+    _stimuls = Vector{Stimul}(undef, n)
+    stimulForms = classify_spikes
+    for i in 1:n
+        _stimuls[i] = Stimul(mkpBase, i, _complexes, mode::Int)
+    end
+    
+    return _complexes, _stimuls
 end
 
-function findPrevComplex(stimul::Stimul, record::EcgRecord)
+function findPrevComplex(stimul::Stimul)
     i = stimul.complex.index
-    return i > 1 ? record.complexes[i - 1] : nothing
+    return i > 1 ? complexes[i - 1] : nothing
 end
-
-include("MalfunctionVVI.jl")
 
 # function BitArraySpawn(n::Int, _QRS_form::Vector{String})
 #     _SAWB = BitArray(undef, n)
@@ -144,5 +133,3 @@ include("MalfunctionVVI.jl")
     
 #     return _CC
 # end
-
-end

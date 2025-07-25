@@ -75,8 +75,11 @@ malfunction: расшифровка битов
 # пока тут привязка к ближайшему
 # TODO: сделать привязку к ближайшему справа
 function findComplex(stimulPosition::Int, complexes::Vector{Complex})
-    vectorDiff = abs.(stimulPosition .- getproperty.(complexes, :position))
-    return complexes[argmin(vectorDiff)]
+    for (i, pos) in enumerate(getproperty.(complexes, :position))
+        if pos >= stimulPosition
+            return complexes[i]
+        end
+    end
 end
 
 function baseParams(mkpBase::API.StdMkp, mode::Int)

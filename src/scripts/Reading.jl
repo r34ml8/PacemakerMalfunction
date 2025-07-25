@@ -27,7 +27,7 @@ function hdr_reading(filepath_hdr)
     end
 
     base = parse(Int, split(data[2], "/")[1])
-    base = round(base / 60 * 1000)
+    base = round(60 / base * 1000)
 
     intervalAV = (mode == 3 && length(data) == 3) ? parse.(Int, split(data[3][4:end], "-")) : nothing
 

@@ -6,6 +6,9 @@ function analyzeVVI()
         if stimul.satisfy
             print(stimul.index, " ")
 
+            stimul.type = "VR"
+            global prevComplex = findPrevComplex(stimul)
+
             stimul.malfunction.normal = normalCheck(stimul)
             if stimul.malfunction.normal
                 # print("normal ")
@@ -14,7 +17,6 @@ function analyzeVVI()
             end
 
             stimul.malfunction.undersensing = undersensingCheck(stimul)
-
             if stimul.malfunction.undersensing
                 print("undersensing ")
             else
@@ -22,7 +24,6 @@ function analyzeVVI()
             end
 
             stimul.malfunction.exactlyUndersensing = exactlyUndersensingCheck(stimul)
-
             if stimul.malfunction.exactlyUndersensing
                 print("exactly undersensing ")
             else
@@ -30,23 +31,34 @@ function analyzeVVI()
             end
 
             stimul.malfunction.oversensing = oversensingCheck(stimul)
-
             if stimul.malfunction.oversensing
-                println("oversensing ")
+                print("oversensing ")
             else
-                println()
                 # println("no oversensing ")
             end
-            # if normalCheck(stimul, rec)
-            #     println("Stimul number $(stimul.index) is normal")
-            # else
-            #     println("Stimul number $(stimul.index) is anormal:")
-            #     if undersensingCheck(stimul, rec)
-            #         println("   Undersensing detected")
-            #     else
-            #         println("   Undersensing not detected")
-            #     end
-            # end
+
+            stimul.malfunction.hysteresis = hysteresisCheck(stimul)
+            if stimul.malfunction.hysteresis
+                print("hysteresis ")
+            else
+                # print("no hysteresis ")
+            end
+
+            stimul.malfunction.noAnswer = noAnswerCheck(stimul)
+            if stimul.malfunction.noAnswer
+                print("has no answer ")
+            else
+                # print("has answer ")
+            end
+
+            stimul.malfunction.unrelized = unrelizedCheck(stimul)
+            if stimul.malfunction.unrelized
+                print("unrelized ")
+            else
+                # print("relized ")
+            end
+
+            println()
         end
     end
 end
@@ -77,7 +89,6 @@ function normalCheck(stimul::Stimul)
         return true
     end
 
-    prevComplex = findPrevComplex(stimul)
     if isInsideInterval(stimul, prevComplex, interval)
         return true
     end
@@ -91,8 +102,11 @@ function normalCheck(stimul::Stimul)
 end
 
 function undersensingCheck(stimul::Stimul)
-    prevComplex = findPrevComplex(stimul)
-    return stimul.malfunction.normal ? false : isInsideInterval(stimul, prevComplex, [200, base - 300])
+    res = stimul.malfunction.normal ? false : isInsideInterval(stimul, prevComplex, [200, base - 300])
+    if res
+        stimul.type = "V"
+    end
+    return res
 end
 
 function exactlyUndersensingCheck(stimul::Stimul)
@@ -102,19 +116,21 @@ function exactlyUndersensingCheck(stimul::Stimul)
         stimulBefore = findStimulBefore(stimul)
         stimulAfter = findStimulAfter(stimul)
         if isInsideInterval(stimul, stimulBefore, interval) || isInsideInterval(stimul, stimulAfter, interval)
+            stimul.type = "V"
             return true
         end
 
         stimulBeside = findStimulAfter(stimul)
         if isInsideInterval(stimul, stimulBeside, interval)
+            stimul.type = "V"
             return true
         end
     end
 
     if stimul.malfunction.normal || stimul.malfunction.undersensing
-        prevComplex = findPrevComplex(stimul)
         interval .-= stimul.complex.RR 
         if isInsideInterval(stimul, prevComplex, interval)
+            stimul.type = "V"
             return true
         end
     end
@@ -124,10 +140,10 @@ end
 
 function oversensingCheck(stimul::Stimul)
     if !stimul.malfunction.normal
-        prevComplex = findPrevComplex(stimul)
         if isMore(stimul, prevComplex, base + 300)
             VBefore = findStimulBefore(stimul, 'V')
             if isMore(stimul, VBefore, base + 60) && (VBefore.complex.index == prevComplex.index)
+                stimul.type = "V"
                 return true
             end
         end
@@ -136,23 +152,68 @@ function oversensingCheck(stimul::Stimul)
     return false
 end
 
-# function hysteresisCheck(stimul::Stimul)
-#     if stimul.malfunction.normal
-#         prevComplex = findPrevComplex(stimul)
-#         if !isnothing(prevComplex)
-#             dist = abs(stimul.position - prevComplex.position)
-#             dist = min(stimul.complex.RR, dist)
-#             if (
-#                 (base + 60 <= dist <= base + 300) &&
-#                 (isMore(stimul, stimul.complex, 30) ||
-#                 _)
-#             )
-#             end
-#         end
-#     end
+function hysteresisCheck(stimul::Stimul)
+    if stimul.malfunction.normal
+        if !isnothing(prevComplex)
+            dist = abs(stimul.position - prevComplex.position)
+            dist = min(stimul.complex.RR, dist)
 
-#     return false
-# end
+            if (
+                (base + 60 <= dist <= base + 300) &&
+                (!isMore(stimul, stimul.complex, 30) &&
+                stimul.position > stimul.complex.position ||
+                stimul.complex.type[1] == 'C') &&
+                !(prevComplex.type[1] in ('V', 'F'))
+            )
+                stimul.type = "V"
+                return true
+            end
+        end
+    end
+
+    return false
+end
+
+function noAnswerCheck(stimul::Stimul)
+    if (
+        (stimul.type == "VR" || stimul.malfunction.normal) &&
+        isMore(stimul, stimul.complex, 80)
+    )
+        if (
+            isnothing(prevComplex) ||
+            stimul.position > ST(prevComplex)
+        )
+            stimul.type = "VN"
+            return true
+        end
+    end
+
+    return false
+end
+
+function unrelizedCheck(stimul::Stimul)
+    if stimul.type == "VR" || stimul.malfunction.normal
+        if (
+            !isMore(stimul, stimul.complex, 80) &&
+            stimul.complex.position < stimul.position
+            )
+            stimul.type = "VU"
+            return true
+        else
+            if (
+                !isnothing(prevComplex) &&
+                stimul.position < ST(prevComplex)
+            )
+                stimul.type = "VU"
+                return true
+            end
+        end
+    end
+
+    return false
+end
+
+
 
 # TODO: функции проверки на гистерезис, без ответа, нереализованный
 
@@ -165,6 +226,11 @@ end
 #     return false
 # end
 
+function ST(complex::Complex)
+    excess = complex.pos_end - complex.pos_end
+    excess = excess > 120 ? excess - 120 : 0
+    return round(complex.pos_end + 0.42 * sqrt(complex.RR) - excess)
+end
 
 function isInsideInterval(stimul::Signal, signal::Union{Signal, Nothing}, interval::Vector{<:Real})
     if !isnothing(signal) && (interval[1] <= abs(stimul.position - signal.position) <= interval[2])
@@ -184,18 +250,29 @@ end
 
 function findStimulBefore(stimul::Stimul, typeCh::Char = ' ')
     for j in (stimul.index - 1):-1:1
-        if stimuls[j].type[1] == typeCh || typeCh == ' '
+        if (
+            (typeCh == ' ') ||
+            (typeCh == 'V') && VCheck(stimul)
+        )
+            return stimuls[j]
+        end
+    end
+
+    return nothing
+end
+
+function findStimulAfter(stimul::Stimul, typeCh::Char = ' ')
+    for j in (stimul.index + 1):length(stimuls)
+        if (
+            (typeCh == ' ') ||
+            (typeCh == 'V') && VCheck(stimul)
+        )
             return stimuls[j]
         end
     end
     return nothing
 end
 
-function findStimulAfter(stimul::Stimul, typeCh::Char = ' ')
-    for j in (stimul.index + 1):length(stimuls)
-        if stimuls[j].type[1] == typeCh || typeCh == ' '
-            return stimuls[j]
-        end
-    end
-    return nothing
+function VCheck(stimul::Stimul)
+    return stimul.malfunction.normal || stimul.type in ("V", "VR") ? true : false
 end

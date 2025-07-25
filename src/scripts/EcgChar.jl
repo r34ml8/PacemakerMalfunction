@@ -76,7 +76,7 @@ malfunction: расшифровка битов
 # TODO: сделать привязку к ближайшему справа
 function findComplex(stimulPosition::Int, complexes::Vector{Complex})
     for (i, pos) in enumerate(getproperty.(complexes, :position))
-        if pos >= stimulPosition
+        if pos + 15 >= stimulPosition
             return complexes[i]
         end
     end

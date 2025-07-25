@@ -17,6 +17,20 @@ end
 
 # filename = "ME1299130220184331_3"
 
+fn = vvi_fn_arr[4]
+
+println(fn)
+mkpBase = PM.get_data_from(fn, "mkp"; author)
+PM.mode, PM.base, _ = PM.get_data_from(fn, "hdr")
+println(PM.base)
+PM.complexes, PM.stimuls = PM.baseParams(mkpBase, PM.mode)
+# _, hdrstruct = Reading.get_data_from(filenames_array[5], marker="hdr")
+PM.analyzeVVI()
+println()
+
+PM.stimuls[5].complex.position
+PM.stimuls[5].position
+
 # supertype(Int)
 
 # PM.mode

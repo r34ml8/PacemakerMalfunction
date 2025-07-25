@@ -195,8 +195,8 @@ function unrelizedCheck(stimul::Stimul)
     if stimul.type == "VR" || stimul.malfunction.normal
         if (
             !isMore(stimul, stimul.complex, 80) &&
-            stimul.complex.position < stimul.position
-            )
+            stimul.complex.position + 15 < stimul.position
+        )
             stimul.type = "VU"
             return true
         else

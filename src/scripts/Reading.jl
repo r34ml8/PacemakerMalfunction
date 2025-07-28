@@ -16,20 +16,20 @@ function hdr_reading(filepath_hdr)
     data = split(line, " ")
 
     data_mode = data[1][1:3]
-    mode = 0
+    _mode = 0
 
     if (data_mode == "DDD")
-        mode = 3
+        _mode = 3
     elseif (data_mode == "AAI")
-        mode = 2
+        _mode = 2
     else
-        mode = 1
+        _mode = 1
     end
+    
+    _base = parse.(Int, split(data[2], "/"))
+    _base = round.(60 * 1000 ./ _base)
 
-    base = parse(Int, split(data[2], "/")[1])
-    base = round(60 / base * 1000)
+    _intervalAV = (_mode == 3 && length(data) == 3) ? parse.(Int, split(data[3][4:end], "-")) : nothing
 
-    intervalAV = (mode == 3 && length(data) == 3) ? parse.(Int, split(data[3][4:end], "-")) : nothing
-
-    return mode, base, intervalAV
+    return _mode, _base, _intervalAV
 end

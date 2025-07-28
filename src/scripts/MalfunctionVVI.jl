@@ -3,7 +3,7 @@ function analyzeVVI()
     satisfyCheck()
 
     for stimul in stimuls
-        if stimul.satisfy
+        if stimul.type != "U"
             print(stimul.index, " ")
 
             stimul.type = "VR"
@@ -63,26 +63,12 @@ function analyzeVVI()
     end
 end
 
-function satisfyCheck()
-    for stimul in stimuls
-        if stimul.complex.type == "Z" || stimul.type[1] in ('0', 'S')
-            stimul.satisfy = false
-            continue
-        end
-
-        prevComplex = findPrevComplex(stimul)
-        if !isnothing(prevComplex) && prevComplex.type == "Z"
-            stimul.satisfy = false
-        end
-    end
-end 
-
 function normalCheck(stimul::Stimul)
-    if !isInsideInterval(stimul, stimul.complex, [0, 70])
+    if !isInsideInterval(stimul, stimul.complex, [0, MS70])
         return false
     end
 
-    interval = [base - 50, base + 50]
+    interval = [base - MS50, base + MS50]
 
     VBefore = findStimulBefore(stimul, 'V')
     if isInsideInterval(stimul, VBefore, interval)
@@ -102,7 +88,7 @@ function normalCheck(stimul::Stimul)
 end
 
 function undersensingCheck(stimul::Stimul)
-    res = stimul.malfunction.normal ? false : isInsideInterval(stimul, prevComplex, [200, base - 300])
+    res = stimul.malfunction.normal ? false : isInsideInterval(stimul, prevComplex, [MS200, base - MS300])
     if res
         stimul.type = "V"
     end
@@ -110,7 +96,7 @@ function undersensingCheck(stimul::Stimul)
 end
 
 function exactlyUndersensingCheck(stimul::Stimul)
-    interval = [base - 50, base + 50]
+    interval = [base - MS50, base + MS50]
 
     if stimul.malfunction.undersensing
         stimulBefore = findStimulBefore(stimul)
@@ -140,9 +126,9 @@ end
 
 function oversensingCheck(stimul::Stimul)
     if !stimul.malfunction.normal
-        if isMore(stimul, prevComplex, base + 300)
+        if isMore(stimul, prevComplex, base + MS300)
             VBefore = findStimulBefore(stimul, 'V')
-            if isMore(stimul, VBefore, base + 60) && (VBefore.complex.index == prevComplex.index)
+            if isMore(stimul, VBefore, base + MS60) && (VBefore.complex.index == prevComplex.index)
                 stimul.type = "V"
                 return true
             end
@@ -159,8 +145,8 @@ function hysteresisCheck(stimul::Stimul)
             dist = min(stimul.complex.RR, dist)
 
             if (
-                (base + 60 <= dist <= base + 300) &&
-                (!isMore(stimul, stimul.complex, 30) &&
+                (base + MS60 <= dist <= base + MS300) &&
+                (!isMore(stimul, stimul.complex, MS30) &&
                 stimul.position > stimul.complex.position ||
                 stimul.complex.type[1] == 'C') &&
                 !(prevComplex.type[1] in ('V', 'F'))
@@ -177,7 +163,7 @@ end
 function noAnswerCheck(stimul::Stimul)
     if (
         (stimul.type == "VR" || stimul.malfunction.normal) &&
-        isMore(stimul, stimul.complex, 80)
+        isMore(stimul, stimul.complex, MS80)
     )
         if (
             isnothing(prevComplex) ||
@@ -194,8 +180,8 @@ end
 function unrelizedCheck(stimul::Stimul)
     if stimul.type == "VR" || stimul.malfunction.normal
         if (
-            !isMore(stimul, stimul.complex, 80) &&
-            stimul.complex.position + 15 < stimul.position
+            !isMore(stimul, stimul.complex, MS80) &&
+            stimul.complex.position + MS15 < stimul.position
         )
             stimul.type = "VU"
             return true
@@ -211,68 +197,4 @@ function unrelizedCheck(stimul::Stimul)
     end
 
     return false
-end
-
-
-
-# TODO: функции проверки на гистерезис, без ответа, нереализованный
-
-# function isInsideIntervalPrevComplex(stimul::Stimul, complex::Complex, rec::EcgRecord, interval::Vector{Int})
-#     prevComplex = findPrevComplex(stimul, rec)
-#     if !isnothing(prevComplex) && (interval[1] <= abs(stimul.position - prevComplex.pos_onset) <= interval[2])
-#         return true
-#     end
-
-#     return false
-# end
-
-function ST(complex::Complex)
-    excess = complex.pos_end - complex.pos_end
-    excess = excess > 120 ? excess - 120 : 0
-    return round(complex.pos_end + 0.42 * sqrt(complex.RR) - excess)
-end
-
-function isInsideInterval(stimul::Signal, signal::Union{Signal, Nothing}, interval::Vector{<:Real})
-    if !isnothing(signal) && (interval[1] <= abs(stimul.position - signal.position) <= interval[2])
-        return true
-    end
-
-    return false
-end
-
-function isMore(stimul::Signal, signal::Union{Signal, Nothing}, value::Real)
-    if !isnothing(signal) && (abs(stimul.position - signal.position) > value)
-        return true
-    end
-
-    return false
-end
-
-function findStimulBefore(stimul::Stimul, typeCh::Char = ' ')
-    for j in (stimul.index - 1):-1:1
-        if (
-            (typeCh == ' ') ||
-            (typeCh == 'V') && VCheck(stimul)
-        )
-            return stimuls[j]
-        end
-    end
-
-    return nothing
-end
-
-function findStimulAfter(stimul::Stimul, typeCh::Char = ' ')
-    for j in (stimul.index + 1):length(stimuls)
-        if (
-            (typeCh == ' ') ||
-            (typeCh == 'V') && VCheck(stimul)
-        )
-            return stimuls[j]
-        end
-    end
-    return nothing
-end
-
-function VCheck(stimul::Stimul)
-    return stimul.malfunction.normal || stimul.type in ("V", "VR") ? true : false
 end

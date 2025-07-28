@@ -5,7 +5,8 @@ import FileUtils.StdEcgDbAPI as API
 include("scripts\\Reading.jl")
 export get_data_from, hdr_reading
 
-include("scripts\\EcgChar.jl")
+
+include("scripts\\Structures.jl")
 export Signal, Complex, Stimul,
     Malfunctions, MalfunctionsVVI,
     MalfunctionsAAI, MalfunctionsDDD,
@@ -14,12 +15,12 @@ export Signal, Complex, Stimul,
 include("scripts\\StimulClassifier.jl")
 export classify_spikes
 
-mode = 0
-base = 0
-complexes = Complex[]
-stimuls = Stimul[]
+include("scripts\\SecondaryFunctions.jl")
+export ST, isInsideInterval, isMore,
+    findStimulBefore, findStimulAfter,
+    VCheck, satisfyCheck, findComplexBefore
 
 include("scripts\\MalfunctionVVI.jl")
-export analyzeVVI
+export analyzeVVI, mediana
 
 end

@@ -1,3 +1,13 @@
+const MS15 = 15
+const MS30 = 30
+const MS50 = 50
+const MS60 = 60
+const MS70 = 70
+const MS80 = 80
+const MS100 = 100
+const MS200 = 200
+const MS300 = 300
+
 abstract type Signal end
 
 mutable struct Complex <: Signal
@@ -30,6 +40,11 @@ abstract type Malfunctions end
 end
 
 @kwdef mutable struct MalfunctionsAAI <: Malfunctions
+    normal::Bool = false
+    undersensing::Bool = false
+    exactlyUndersensing::Bool = false
+    oversensing::Bool = false
+    noAnswer::Bool = false
 end
 
 @kwdef mutable struct MalfunctionsDDD <: Malfunctions
@@ -40,11 +55,10 @@ mutable struct Stimul <: Signal
     type::String
     position::Int
     complex::Complex
-    satisfy::Bool
     malfunction::Malfunctions
 
     function Stimul(mkpBase::API.StdMkp, _index::Int, complexes::Vector{Complex}, mode::Int)
-        _type = "V"
+        _type = "U"
         # _type = mkpBase.stimtype[_index]
         _position = mkpBase.stimpos[_index]
         _complex = findComplex(_position, complexes)
@@ -53,27 +67,16 @@ mutable struct Stimul <: Signal
             _malfunction = MalfunctionsDDD()
         elseif mode == 2
             _malfunction = MalfunctionsAAI()
+            _type = "A"
         else
             _malfunction = MalfunctionsVVI()
+            _type = "V"
         end
 
-        return new(_index, _type, _position, _complex, true, _malfunction)
+        return new(_index, _type, _position, _complex, _malfunction)
     end
 end
 
-"""
-malfunction: расшифровка битов
-1 - норма
-2 - гипосенсинг по желудочковому каналу
-3 - точно гипосенсинг по желудочковому каналу
-4 - гиперсенсинг по желудочковому каналу
-5 - гистерезис
-6 - желудочковый стимул без ответа
-7 - нереализованный желудочковый стимул
-"""
-
-# пока тут привязка к ближайшему
-# TODO: сделать привязку к ближайшему справа
 function findComplex(stimulPosition::Int, complexes::Vector{Complex})
     for (i, pos) in enumerate(getproperty.(complexes, :position))
         if pos + 15 >= stimulPosition
@@ -96,12 +99,24 @@ function baseParams(mkpBase::API.StdMkp, mode::Int)
         _stimuls[i] = Stimul(mkpBase, i, _complexes, mode::Int)
     end
     
+    checkBase(_complexes)
+
     return _complexes, _stimuls
 end
 
 function findPrevComplex(stimul::Stimul)
     i = stimul.complex.index
     return i > 1 ? complexes[i - 1] : nothing
+end
+
+function checkBase(complexes::Vector{Complex})
+    global base
+    if length(base) == 1
+        base = base[1]
+    else
+        _base = mediana(filter(!isnothing, getproperty.(complexes, :RR)))
+        base = abs(base[1] - _base) < abs(base[2] - _base) ? base[1] : base[2]
+    end
 end
 
 # function BitArraySpawn(n::Int, _QRS_form::Vector{String})

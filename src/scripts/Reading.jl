@@ -11,6 +11,7 @@ function get_data_from(filename, marker; author="", path="C:\\Users\\user\\cours
 end
 
 function hdr_reading(filepath_hdr)
+    _fs = FileUtils.readhdr(filepath_hdr).fs
     _, hdrstruct = FileUtils.readhdr_patient_exam(filepath_hdr)
     line = hdrstruct.stimulus
     data = split(line, " ")
@@ -26,10 +27,17 @@ function hdr_reading(filepath_hdr)
         _mode = 1
     end
     
-    _base = parse.(Int, split(data[2], "/"))
-    _base = round.(60 * 1000 ./ _base)
+    _base_vec = parse.(Int, split(data[2], "/"))
+    _base_vec = round.(60 * 1000 ./ _base_vec)
 
-    _intervalAV = (_mode == 3 && length(data) == 3) ? parse.(Int, split(data[3][4:end], "-")) : nothing
+    _base = length(_base_vec) == 2 ? (_base_vec[1], _base_vec[2]) : _base_vec[1]
 
-    return _mode, _base, _intervalAV
+    _intervalAV = nothing
+
+    if _mode == 3 && length(data) == 3
+        vec_interval = parse.(Int, split(data[3][4:end], "-"))
+        _intervalAV = length(vec_interval) == 2 ? (vec_interval[1], vec_interval[2]) : vec_interval[1]
+    end
+
+    return EcgRecord(_fs, _mode, _base, _intervalAV)
 end

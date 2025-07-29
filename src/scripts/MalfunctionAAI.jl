@@ -1,30 +1,49 @@
-function analyzeAAI()
-    satisfyCheck()
+function analyzeAAI(stimuls::Vector{Stimul},
+    QRSes::Vector{QRS}, base::Float64, fs::Float64
+)
+    curQRS = QRSes[stimul.QRS_index]
+    prevQRS = stimul.QRS_index > 1 ? QRSes[stimul.QRS_index - 1] : nothing
 
     for stimul in stimuls
-        if stimul.type != "U"
+        if satisfyCheck(curQRS, prevQRS)
+            stimul.type = "AR"
+
+            interval50 = MS2P.((base - MS50, base + MS50), fs)
+
             stimul.malfunction.normal = normalCheck(stimul)
 
             stimul.malfunction.undersensing = undersensingCheck(stimul)
 
             stimul.malfunction.exactlyUndersensing = exactlyUndersensingCheck(stimul)
+
+            stimul.malfunction.oversensing = oversensingCheck(stimul)
+        else
+            stimul.type = "U"
         end
     end
 end
 
-function normalCheck(stimul::Stimul)
-    interval = [base - MS50, base + MS50]
+function normalCheck(stimul::Stimul, stimuls::Vector{Stimul},
+    curQRS::QRS, prevQRS::Union{Nothing, QRS},
+    interval::Tuple{Int64, Int64}, base::Float64, fs::Float64
+)
+    ABefore = findStimulBefore(stimul.index, stimuls, 'A')
+    if (!isnothing(ABefore) && 
+        ABefore.QRS_index == curQRS.index &&
+        ABefore.malfunction.normal
+    )
+        return false
+    end
 
-    ABefore = findStimulBefore(stimul, 'A')
     if isInsideInterval(stimul, ABefore, interval)
         return true
     end
 
-    if isMore(stimul, prevComplex, base - MS200)
+    if isMore(stimul, prevQRS, MS2P(base - MS200, fs))
         return true
     end
 
-    AAfter = findStimulAfter(stimul, 'A')
+    AAfter = findStimulAfter(stimul.index, stimuls, 'A')
     if isInsideInterval(stimul, AAfter, interval)
         return true
     end
@@ -32,34 +51,54 @@ function normalCheck(stimul::Stimul)
     return false
 end
 
-function undersensingCheck(stimul::Stimul)
+function undersensingCheck(stimul::Stimul, QRSes::Vector{QRS},
+    base::Float64, fs::Float64
+)
     if stimul.malfunction.normal
         return false
     end
 
-    SAWB = findComplexBefore(stimul, "SAWB")
-    return isInsideInterval(stimul, SAWB, [0, base - MS300])
+    SAWB = findComplexBefore(stimul, QRSes, "SAWB")
+    return isInsideInterval(stimul, SAWB, MS2P.((0, base - MS300), fs))
 end
 
-function exactlyUndersensingCheck(stimul::Stimul)
+function exactlyUndersensingCheck(stimul::Stimul,
+    stimuls::Vector{Stimul}, interval::Tuple{Int64, Int64}
+)
     if !stimul.malfunction.undersensing
         return false
     end
 
-    stimulBefore = findStimulBefore(stimul)
-    return isInsideInterval(stimul, stimulBefore, [base - MS50, base + MS50])
+    stimulBefore = findStimulBefore(stimul.index, stimuls)
+    return isInsideInterval(stimul, stimulBefore, interval)
 end
 
-function oversensingCheck()
+function oversensingCheck(stimul::Stimul, stimuls::Vector{Stimul},
+    prevQRS::Union{Nothing, QRS}, base::Float64, fs::Float64
+)
     if stimul.malfunction.oversensing
         return false
     end
 
-    prevComplex = findPrevComplex(stimul)
-    if !isnothing(prevComplex) && prevComplex.type[1] in "SAWB"
-        if isMore(stimul, prevComplex, base - MS300)
+    if !isnothing(prevQRS) && prevQRS.type[1] in "SAWB"
+        if isMore(stimul, prevQRS, MS2P(base - MS300, fs))
             return true
         end
-        # TODO: доделать + частота дискретизации + переделать весь код
+
+        ABefore = findStimulBefore(stimul, stimuls, 'A')
+        if (!isnothing(ABefore) &&
+            ABefore.QRS_index == prevQRS.index &&
+            isMore(stimul, ABefore, MS2P(base + MS60, fs))
+        )
+            return true
+        end
     end
+
+    return false
 end
+
+function noAnswerCheck(stimul::Stimul, )
+    
+end
+
+# TODO: доделать AAI, проверить

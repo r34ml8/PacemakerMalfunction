@@ -9,28 +9,39 @@ path = "C:\\Users\\user\\course\\STDECGDB"
 vvi_fn_arr = String[]
 
 for fn in filenames_array
-    m, _, _ = PM.get_data_from(fn, "hdr")
-    if m == 2
+    println(fn)
+    rec = PM.get_data_from(fn, "hdr")
+    if rec.mode == 1
         push!(vvi_fn_arr, fn)
     end
 end
 
+for fn in vvi_fn_arr
+    println(fn)
+    mkpBase = PM.get_data_from(fn, "mkp"; author)
+    rec = PM.get_data_from(fn, "hdr")
+    println(rec.base)
+    QRSes, stimuls = PM.mkpSignals(mkpBase, rec.mode, rec.base)
+    PM.analyzeVVI(stimuls, QRSes, rec.base, rec.fs)
+    println()
+end
+
 # filename = "ME1299130220184331_3"
 
-fn = vvi_fn_arr[8]
+# fn = vvi_fn_arr[8]
 
-println(fn)
-mkpBase = PM.get_data_from(fn, "mkp"; author)
-PM.mode, PM.base, _ = PM.get_data_from(fn, "hdr")
-println(PM.base)
-PM.complexes, PM.stimuls = PM.baseParams(mkpBase, PM.mode)
-println(PM.base)
+# println(fn)
+# mkpBase = PM.get_data_from(fn, "mkp"; author)
+# PM.mode, PM.base, _ = PM.get_data_from(fn, "hdr")
+# println(PM.base)
+# PM.complexes, PM.stimuls = PM.baseParams(mkpBase, PM.mode)
+# println(PM.base)
 # _, hdrstruct = Reading.get_data_from(filenames_array[5], marker="hdr")
-PM.analyzeVVI()
-println()
+# PM.analyzeVVI()
+# println()
 
-PM.stimuls[5].complex.position
-PM.stimuls[5].position
+# PM.stimuls[5].complex.position
+# PM.stimuls[5].position
 
 # supertype(Int)
 
@@ -38,13 +49,16 @@ PM.stimuls[5].position
 for fn in vvi_fn_arr
     println(fn)
     mkpBase = PM.get_data_from(fn, "mkp"; author)
-    PM.mode, PM.base, _ = PM.get_data_from(fn, "hdr")
-    println(PM.base)
-    PM.complexes, PM.stimuls = PM.baseParams(mkpBase, PM.mode)
-# _, hdrstruct = Reading.get_data_from(filenames_array[5], marker="hdr")
-    PM.analyzeVVI()
+    rec = PM.get_data_from(fn, "hdr")
+    println(rec.base)
+    QRSes, stimuls = PM.mkpSignals(mkpBase, rec.mode, rec.base)
+    PM.analyzeVVI(stimuls, QRSes, rec.base, rec.fs)
     println()
 end
+
+hg = (122, 49, 93)
+typeof(hg)
+hg = hg .- 5
 
 
 a = "1"

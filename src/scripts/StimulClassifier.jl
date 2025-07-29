@@ -2,8 +2,8 @@ function classify_spikes(
     spikepos::Vector{Int64},
     qrs_bounds::Vector{UnitRange{Int64}},
     qrs_forms::Vector{String},
-    mode::Int,
-    fs::Float64 = 1000.0,
+    mode::Int64,
+    fs::Float64,
     radius::Float64 = 0.03,
     )
 

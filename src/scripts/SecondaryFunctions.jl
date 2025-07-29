@@ -1,24 +1,29 @@
-function satisfyCheck()
-    for stimul in stimuls
-        if stimul.complex.type == "Z"
-            stimul.type = "U"
-            continue
-        end
-
-        prevComplex = findPrevComplex(stimul)
-        if !isnothing(prevComplex) && prevComplex.type == "Z"
-            stimul.type = "U"
-        end
-    end
-end 
-
-function ST(complex::Complex)
-    excess = complex.pos_end - complex.pos_end
-    excess = excess > 120 ? excess - 120 : 0
-    return round(complex.pos_end + 0.42 * sqrt(complex.RR) - excess)
+function MS2P(t::Real, fs::Float64)
+    return floor(Int, t * fs / 1000)
 end
 
-function isInsideInterval(stimul::Signal, signal::Union{Signal, Nothing}, interval::Vector{<:Real})
+function satisfyCheck(curQRS::QRS, prevQRS::Union{Nothing, QRS})
+    if (curQRS.type == "Z" ||
+        !isnothing(prevQRS) && prevQRS.type == "Z"
+    )
+        return false
+    end
+
+    return true
+end 
+
+# function findPrevQRS(stimul::Stimul, QRSes::Vector{QRS})
+#     i = stimul.QRS_index
+#     return i > 1 ? QRSes[i - 1] : nothing
+# end
+
+function ST(curQRS::QRS)
+    excess = curQRS.pos_end - curQRS.pos_end
+    excess = excess > 120 ? excess - 120 : 0
+    return round(curQRS.pos_end + 0.42 * sqrt(curQRS.RR) - excess)
+end
+
+function isInsideInterval(stimul::Signal, signal::Union{Signal, Nothing}, interval::Tuple{<:Real, <:Real})
     if !isnothing(signal) && (interval[1] <= abs(stimul.position - signal.position) <= interval[2])
         return true
     end
@@ -34,8 +39,8 @@ function isMore(stimul::Signal, signal::Union{Signal, Nothing}, value::Real)
     return false
 end
 
-function findStimulBefore(stimul::Stimul, typeCh::Char = ' ')
-    for j in (stimul.index - 1):-1:1
+function findStimulBefore(stimul_index::Int64, stimuls::Union{Nothing, Vector{Stimul}}, typeCh::Char=' ')
+    for j in (stimul_index - 1):-1:1
         if (
             typeCh == ' ' ||
             typeCh == 'V' && VCheck(stimuls[j]) ||
@@ -48,8 +53,8 @@ function findStimulBefore(stimul::Stimul, typeCh::Char = ' ')
     return nothing
 end
 
-function findStimulAfter(stimul::Stimul, typeCh::Char = ' ')
-    for j in (stimul.index + 1):length(stimuls)
+function findStimulAfter(stimul_index::Int64, stimuls::Union{Nothing, Vector{Stimul}}, typeCh::Char=' ')
+    for j in (stimul_index + 1):length(stimuls)
         if (
             typeCh == ' ' ||
             typeCh == 'V' && VCheck(stimuls[j]) ||
@@ -62,7 +67,7 @@ function findStimulAfter(stimul::Stimul, typeCh::Char = ' ')
 end
 
 function VCheck(stimul::Stimul)
-    return stimul.malfunction.normal || stimul.type in ("V", "VR") ? true : false
+    return stimul.type in ("V", "VR") ? true : false
 end
 
 function mediana(vec)
@@ -76,10 +81,10 @@ function mediana(vec)
     return med
 end
 
-function findComplexBefore(stimul::Stimul, typeStr::String)
-    for j in (stimul.complex.index - 1):-1:1
-        if complexes[j].type[1] in typeStr
-            return complexes[j]
+function findQRSBefore(stimul::Stimul, QRSes::Vector{QRS}, typeStr::String)
+    for j in (stimul.QRS_index - 1):-1:1
+        if QRSes[j].type[1] in typeStr
+            return QRSes[j]
         end
     end
 

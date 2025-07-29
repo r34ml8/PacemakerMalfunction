@@ -2,15 +2,15 @@ module PacemakerMalfunction
 
 import FileUtils.StdEcgDbAPI as API
 
-include("scripts\\Reading.jl")
-export get_data_from, hdr_reading
-
-
 include("scripts\\Structures.jl")
-export Signal, Complex, Stimul,
+export Signal, QRS, Stimul,
     Malfunctions, MalfunctionsVVI,
     MalfunctionsAAI, MalfunctionsDDD,
-    baseParams, findPrevComplex
+    baseParams, findPrevQRS
+
+include("scripts\\Reading.jl")
+export get_data_from
+
 
 include("scripts\\StimulClassifier.jl")
 export classify_spikes
@@ -18,7 +18,7 @@ export classify_spikes
 include("scripts\\SecondaryFunctions.jl")
 export ST, isInsideInterval, isMore,
     findStimulBefore, findStimulAfter,
-    VCheck, satisfyCheck, findComplexBefore
+    VCheck, satisfyCheck, findQRSBefore
 
 include("scripts\\MalfunctionVVI.jl")
 export analyzeVVI, mediana

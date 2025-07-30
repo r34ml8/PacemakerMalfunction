@@ -2,6 +2,10 @@ function MS2P(t::Real, fs::Float64)
     return floor(Int, t * fs / 1000)
 end
 
+function P2MS(p::Int64, fs::Float64)
+    return p * 1000 / fs
+end
+
 function satisfyCheck(curQRS::QRS, prevQRS::Union{Nothing, QRS})
     if (curQRS.type == "Z" ||
         !isnothing(prevQRS) && prevQRS.type == "Z"

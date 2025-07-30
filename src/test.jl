@@ -1,31 +1,79 @@
 # using DataFrames
 include("PacemakerMalfunction.jl")
 import PacemakerMalfunction as PM
+import DataFrames as DF
+import XLSX
+using FileUtils
 
 filenames_array = readlines("C:\\Users\\user\\course\\STDECGDB\\dbstate\\#stim.txt")
 author = "v2_0_0_dev"
 path = "C:\\Users\\user\\course\\STDECGDB"
 
 vvi_fn_arr = String[]
+aai_fn_arr = String[]
 
 for fn in filenames_array
-    println(fn)
     rec = PM.get_data_from(fn, "hdr")
     if rec.mode == 1
         push!(vvi_fn_arr, fn)
+    elseif rec.mode == 2
+        println(fn)
+        push!(aai_fn_arr, fn)
     end
 end
 
-for fn in vvi_fn_arr
+for fn in aai_fn_arr
+    analyze(fn)
+    getproperty.(QRSes, :position)
+    getproperty.(stimuls, :position)
+end
+
+function toXLSX(QRSes::Vector{PM.QRS}, stimuls::Vector{PM.Stimul})
+    dfQRS = DF.DataFrame(QRSes)
+    dfStimul = DF.DataFrame(stimuls)
+    dfMalf = DF.DataFrame(getproperty.(stimuls, :malfunction))
+
+    XLSX.writetable("malf.xlsx", dfMalf, overwrite=true)
+    XLSX.writetable("QRS.xlsx", dfQRS, overwrite=true)
+    XLSX.writetable("stimuls.xlsx", dfStimul[:, 1:4], overwrite=true)
+end
+
+function analyze(fn::String)
     println(fn)
     mkpBase = PM.get_data_from(fn, "mkp"; author)
     rec = PM.get_data_from(fn, "hdr")
+    QRSes, stimuls = PM.mkpSignals(mkpBase, rec)
     println(rec.base)
-    QRSes, stimuls = PM.mkpSignals(mkpBase, rec.mode, rec.base)
-    PM.analyzeVVI(stimuls, QRSes, rec.base, rec.fs)
+    PM.analyzeAAI(stimuls, QRSes, rec.base, rec.fs)
     println()
+    return QRSes, stimuls, mkpBase.stimtype
 end
 
+f = "30018678_1"
+q, s, t = analyze(f)
+toXLSX(q, s)
+markers(f, t)
+
+println(analyze("30018678_1"))
+
+function markers(filen::String, t)
+    filepath_json = joinpath(path, "mkp", filen * "." * author, filen * ".json")
+    mkp_ = FileUtils.read_stdmkp_json(filepath_json)
+
+    newforms = t
+    mkp_.stimtype = newforms
+    mkp_.author = "res"
+    mkpath(joinpath(path, "mkp", filen * "." * "res"))
+    FileUtils.write_stdmkp_json(joinpath(path, "mkp", filen * "." * "res", filen * ".json"), )
+end
+
+XLSX.writetable("stimtype.xlsx", DF.DataFrame(type=analyze("30018678_1")))
+vec_stimpos = analyze("30018678_1")
+to
+vec_SS = [vec_stimpos[i] - vec_stimpos[i - 1] for i in 2:25]
+print(vec_SS)
+
+fn = "st003045_1"
 # filename = "ME1299130220184331_3"
 
 # fn = vvi_fn_arr[8]

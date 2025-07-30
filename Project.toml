@@ -9,6 +9,7 @@ Descriptors = "b2dd10be-c0b5-41fc-bf7d-fdb86be5b335"
 FileUnv_jll = "c10d0ea1-10c0-5fab-a796-b821f293b8d8"
 FileUtils = "61402b12-eb4b-4f0c-a04f-adfcfe5d14e4"
 IBoxAccess = "1607262a-405a-4f9a-89bc-45a61e12db11"
+XLSX = "fdbf4ff8-1666-58a4-91e7-1b58723a45e0"
 wfdb_wrapper_jll = "cfa65b43-6878-5963-b59c-e7edc60d5dc9"
 
 [sources]
@@ -20,6 +21,7 @@ wfdb_wrapper_jll = {url = "https://github.com/sairus7/wfdb_wrapper_jll.jl.git"}
 
 [compat]
 DataFrames = "1.7.0"
+XLSX = "0.10.4"
 julia = "1.6.7"
 
 [extras]

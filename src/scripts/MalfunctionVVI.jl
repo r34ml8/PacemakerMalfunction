@@ -12,49 +12,49 @@ function analyzeVVI(stimuls::Vector{Stimul},
 
             print(stimul.index, " ")
 
-            stimul.malfunction.normal = normalCheck(stimul, stimuls, curQRS, prevQRS, interval50, fs)
+            stimul.malfunction.normal = normalCheckV(stimul, stimuls, curQRS, prevQRS, interval50, fs)
             if stimul.malfunction.normal
                 # print("normal ")
             else
                 print("anormal ")
             end
 
-            stimul.malfunction.undersensing = undersensingCheck(stimul, prevQRS, base, fs)
+            stimul.malfunction.undersensing = undersensingCheckV(stimul, prevQRS, base, fs)
             if stimul.malfunction.undersensing
                 print("undersensing ")
             else
                 # print("no undersensing ")
             end
 
-            stimul.malfunction.exactlyUndersensing = exactlyUndersensingCheck(stimul, stimuls, curQRS, prevQRS, interval50)
+            stimul.malfunction.exactlyUndersensing = exactlyUndersensingCheckV(stimul, stimuls, curQRS, prevQRS, interval50)
             if stimul.malfunction.exactlyUndersensing
                 print("exactly undersensing ")
             else
                 # print("exactly no undersensing ")
             end
 
-            stimul.malfunction.oversensing = oversensingCheck(stimul, stimuls, prevQRS, base, fs)
+            stimul.malfunction.oversensing = oversensingCheckV(stimul, stimuls, prevQRS, base, fs)
             if stimul.malfunction.oversensing
                 print("oversensing ")
             else
                 # println("no oversensing ")
             end
 
-            stimul.malfunction.hysteresis = hysteresisCheck(stimul, curQRS, prevQRS, base, fs)
+            stimul.malfunction.hysteresis = hysteresisCheckV(stimul, curQRS, prevQRS, base, fs)
             if stimul.malfunction.hysteresis
                 print("hysteresis ")
             else
                 # print("no hysteresis ")
             end
 
-            stimul.malfunction.noAnswer = noAnswerCheck(stimul, curQRS, prevQRS, fs)
+            stimul.malfunction.noAnswer = noAnswerCheckV(stimul, curQRS, prevQRS, fs)
             if stimul.malfunction.noAnswer
                 print("has no answer ")
             else
                 # print("has answer ")
             end
 
-            stimul.malfunction.unrelized = unrelizedCheck(stimul, curQRS, prevQRS, fs)
+            stimul.malfunction.unrelized = unrelizedCheckV(stimul, curQRS, prevQRS, fs)
             if stimul.malfunction.unrelized
                 print("unrelized ")
             else
@@ -68,7 +68,7 @@ function analyzeVVI(stimuls::Vector{Stimul},
     end
 end
 
-function normalCheck(stimul::Stimul, stimuls::Vector{Stimul},
+function normalCheckV(stimul::Stimul, stimuls::Vector{Stimul},
     curQRS::QRS, prevQRS::QRS, interval::Tuple{Int64, Int64}, fs::Float64
 )
     if !isInsideInterval(stimul, curQRS, MS2P.((0, MS70), fs))
@@ -92,7 +92,7 @@ function normalCheck(stimul::Stimul, stimuls::Vector{Stimul},
     return false
 end
 
-function undersensingCheck(stimul::Stimul,
+function undersensingCheckV(stimul::Stimul,
     prevQRS::Union{Nothing, QRS}, base::Float64, fs::Float64
 )
     if !stimul.malfunction.normal
@@ -104,7 +104,7 @@ function undersensingCheck(stimul::Stimul,
     return false
 end
 
-function exactlyUndersensingCheck(stimul::Stimul,
+function exactlyUndersensingCheckV(stimul::Stimul,
     stimuls::Vector{Stimul}, curQRS::QRS, prevQRS::Union{Nothing, QRS},
     interval::Tuple{Int64, Int64}
 )
@@ -131,7 +131,7 @@ function exactlyUndersensingCheck(stimul::Stimul,
     return false
 end
 
-function oversensingCheck(stimul::Stimul, stimuls::Vector{Stimul},
+function oversensingCheckV(stimul::Stimul, stimuls::Vector{Stimul},
     prevQRS::Union{Nothing, QRS}, base::Float64, fs::Float64
 )
     if !stimul.malfunction.normal
@@ -150,7 +150,7 @@ function oversensingCheck(stimul::Stimul, stimuls::Vector{Stimul},
     return false
 end
 
-function hysteresisCheck(stimul::Stimul, curQRS::QRS,
+function hysteresisCheckV(stimul::Stimul, curQRS::QRS,
     prevQRS::Union{Nothing, QRS}, base::Float64, fs::Float64
 )
     if stimul.malfunction.normal
@@ -174,7 +174,7 @@ function hysteresisCheck(stimul::Stimul, curQRS::QRS,
     return false
 end
 
-function noAnswerCheck(stimul::Stimul, curQRS::QRS,
+function noAnswerCheckV(stimul::Stimul, curQRS::QRS,
     prevQRS::Union{Nothing, QRS}, fs::Float64
 )
     if (
@@ -190,7 +190,7 @@ function noAnswerCheck(stimul::Stimul, curQRS::QRS,
     return false
 end
 
-function unrelizedCheck(stimul::Stimul, curQRS::QRS,
+function unrelizedCheckV(stimul::Stimul, curQRS::QRS,
     prevQRS::Union{Nothing, QRS}, fs::Float64
 )
     if stimul.type == "VR" || stimul.malfunction.normal

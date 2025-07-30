@@ -18,9 +18,13 @@ export classify_spikes
 include("scripts\\SecondaryFunctions.jl")
 export ST, isInsideInterval, isMore,
     findStimulBefore, findStimulAfter,
-    VCheck, satisfyCheck, findQRSBefore
+    VCheck, satisfyCheck, findQRSBefore,
+    mediana
 
 include("scripts\\MalfunctionVVI.jl")
-export analyzeVVI, mediana
+export analyzeVVI
+
+include("scripts\\MalfunctionAAI.jl")
+export analyzeAAI
 
 end

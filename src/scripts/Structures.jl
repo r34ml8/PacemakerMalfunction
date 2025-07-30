@@ -92,7 +92,7 @@ function findQRS(stimulPosition::Int64, QRSes::Vector{QRS})
     end
 end
 
-function mkpSignals(mkpBase::API.StdMkp, mode::Int64, base::Float64)
+function mkpSignals(mkpBase::API.StdMkp, rec::EcgRecord)
     n = length(mkpBase.QRS_form)
     _QRSes = Vector{QRS}(undef, n)
     for i in 1:n
@@ -103,16 +103,16 @@ function mkpSignals(mkpBase::API.StdMkp, mode::Int64, base::Float64)
     _stimuls = Vector{Stimul}(undef, n)
     # stimulForms = classify_spikes
     for i in 1:n
-        _stimuls[i] = Stimul(mkpBase, i, _QRSes, mode)
+        _stimuls[i] = Stimul(mkpBase, i, _QRSes, rec.mode)
     end
     
-    checkBase(_QRSes, base)
+    rec.base = checkBase(_QRSes, rec.base, rec.fs)
 
     return _QRSes, _stimuls
 end
 
 function checkBase(QRSes::Vector{QRS},
-    base::Union{Float64, Tuple{Float64, Float64}}
+    base::Union{Float64, Tuple{Float64, Float64}}, fs::Float64
 )
     if length(base) == 1
         base = base[1]
@@ -120,6 +120,8 @@ function checkBase(QRSes::Vector{QRS},
         _base = mediana(filter(!isnothing, getproperty.(QRSes, :RR)))
         base = abs(base[1] - _base) < abs(base[2] - _base) ? base[1] : base[2]
     end
+
+    return base
 end
 
 # function BitArraySpawn(n::Int64, _QRS_form::Vector{String})

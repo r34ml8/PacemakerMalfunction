@@ -23,7 +23,7 @@ function hdr_reading(filepath_hdr)
         _mode = 3
     elseif (data_mode == "AAI")
         _mode = 2
-    else
+    elseif (data_mode == "VVI")
         _mode = 1
     end
     

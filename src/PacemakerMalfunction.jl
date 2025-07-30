@@ -11,7 +11,6 @@ export Signal, QRS, Stimul,
 include("scripts\\Reading.jl")
 export get_data_from
 
-
 include("scripts\\StimulClassifier.jl")
 export classify_spikes
 

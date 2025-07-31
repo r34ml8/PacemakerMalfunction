@@ -22,12 +22,6 @@ for fn in filenames_array
     end
 end
 
-for fn in aai_fn_arr
-    analyze(fn)
-    getproperty.(QRSes, :position)
-    getproperty.(stimuls, :position)
-end
-
 function toXLSX(QRSes::Vector{PM.QRS}, stimuls::Vector{PM.Stimul})
     dfQRS = DF.DataFrame(QRSes)
     dfStimul = DF.DataFrame(stimuls)
@@ -46,15 +40,8 @@ function analyze(fn::String)
     println(rec.base)
     PM.analyzeAAI(stimuls, QRSes, rec.base, rec.fs)
     println()
-    return QRSes, stimuls, mkpBase.stimtype
+    return QRSes, stimuls, getproperty.(stimuls, :type)
 end
-
-f = "30018678_1"
-q, s, t = analyze(f)
-toXLSX(q, s)
-markers(f, t)
-
-println(analyze("30018678_1"))
 
 function markers(filen::String, t)
     filepath_json = joinpath(path, "mkp", filen * "." * author, filen * ".json")
@@ -64,8 +51,30 @@ function markers(filen::String, t)
     mkp_.stimtype = newforms
     mkp_.author = "res"
     mkpath(joinpath(path, "mkp", filen * "." * "res"))
-    FileUtils.write_stdmkp_json(joinpath(path, "mkp", filen * "." * "res", filen * ".json"), )
+    FileUtils.write_stdmkp_json(joinpath(path, "mkp", filen * "." * "res", filen * ".json"), mkp_)
 end
+
+for fn in aai_fn_arr
+    _, _, t = analyze(fn)
+    println(t)
+    markers(fn, t)
+    # getproperty.(QRSes, :position)
+    # getproperty.(stimuls, :position)
+end
+
+QRSes, stimuls, t = analyze(aai_fn_arr[1])
+toXLSX(QRSes, stimuls)
+
+
+
+
+# q, s, t = analyze(f)
+# markers(f, t)
+
+# toXLSX(q, s)
+# println(analyze("30018678_1"))
+
+
 
 XLSX.writetable("stimtype.xlsx", DF.DataFrame(type=analyze("30018678_1")))
 vec_stimpos = analyze("30018678_1")

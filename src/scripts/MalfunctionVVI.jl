@@ -65,7 +65,7 @@ function analyzeVVI(stimuls::Vector{Stimul},
         else
             stimul.type = "U"
         end
-    end
+    end 
 end
 
 function normalCheckV(stimul::Stimul, stimuls::Vector{Stimul},

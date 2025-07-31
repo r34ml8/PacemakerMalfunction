@@ -1,7 +1,7 @@
 function analyzeAAI(stimuls::Vector{Stimul},
     QRSes::Vector{QRS}, base::Float64, fs::Float64
 )
-    for stimul in stimuls
+    for (i, stimul) in enumerate(stimuls)
         curQRS = QRSes[stimul.QRS_index]
         prevQRS = stimul.QRS_index > 1 ? QRSes[stimul.QRS_index - 1] : nothing
 
@@ -40,13 +40,22 @@ function analyzeAAI(stimuls::Vector{Stimul},
                 # println("no oversensing ")
             end
             
-            stimul.malfunction.noAnswer = noAnswerCheckA(stimul, stimuls, curQRS)
-            if stimul.malfunction.noAnswer
-                print("has no answer ")
-            else
-                # print("has answer ")
+            if i > 1
+                stimuls[i - 1].malfunction.noAnswer = noAnswerCheckA(stimul, stimuls, curQRS)
+                if stimuls[i - 1].malfunction.noAnswer
+                    print("prev has no answer ")
+                else
+                    # print("has answer ")
+                end
             end
-            
+
+            stimul.malfunction.unrelized = unrelizedCheckA(stimul, curQRS, prevQRS)
+            if stimul.malfunction.unrelized
+                print("unrelized ")
+            else
+                # print("relized ")
+            end
+
             println()
         else
             stimul.type = "U"
@@ -63,6 +72,7 @@ function normalCheckA(stimul::Stimul, stimuls::Vector{Stimul},
         ABefore.QRS_index == curQRS.index &&
         ABefore.malfunction.normal
     )
+        println("hereherehere")
         return false
     end
 
@@ -85,9 +95,9 @@ end
 function undersensingCheckA(stimul::Stimul, QRSes::Vector{QRS},
     base::Float64, fs::Float64
 )
-    if stimul.malfunction.normal
-        return false
-    end
+    # if stimul.malfunction.normal
+    #     return false
+    # end
 
     SAWB = findQRSBefore(stimul, QRSes, "SAWB")
     res = isInsideInterval(stimul, SAWB, MS2P.((0, base - MS300), fs))
@@ -147,6 +157,19 @@ function noAnswerCheckA(stimul::Stimul, stimuls::Vector{Stimul},
             stimuls[ABefore.index].type = "AN"
             return true
         end
+    end
+
+    return false
+end
+
+function unrelizedCheckA(stimul::Stimul, curQRS::QRS,
+    prevQRS::Union{Nothing, QRS}
+)
+    mid = prevQRS.pos_end
+    mid += (curQRS.position - prevQRS.pos_end) / 4
+    if prevQRS.position <= stimul.position <= mid
+        stimul.type = "AU"
+        return true
     end
 
     return false

@@ -48,7 +48,7 @@ function findStimulBefore(stimul_index::Int64, stimuls::Union{Nothing, Vector{St
         if (
             typeCh == ' ' ||
             typeCh == 'V' && VCheck(stimuls[j]) ||
-            typeCh == 'A' && stimuls[j].type[1] == 'A'
+            typeCh == 'A' && ACheck(stimuls[j])
         )
             return stimuls[j]
         end
@@ -62,7 +62,7 @@ function findStimulAfter(stimul_index::Int64, stimuls::Union{Nothing, Vector{Sti
         if (
             typeCh == ' ' ||
             typeCh == 'V' && VCheck(stimuls[j]) ||
-            typeCh == 'A' && stimuls[j].type[1] == 'A'
+            typeCh == 'A' && ACheck(stimuls[j])
         )
             return stimuls[j]
         end
@@ -72,6 +72,10 @@ end
 
 function VCheck(stimul::Stimul)
     return stimul.type in ("V", "VR") ? true : false
+end
+
+function ACheck(stimul::Stimul)
+    return stimul.type in ("A", "AR", "AN") ? true : false
 end
 
 function mediana(vec)

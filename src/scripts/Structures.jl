@@ -52,6 +52,7 @@ end
     exactlyUndersensing::Bool = false
     oversensing::Bool = false
     noAnswer::Bool = false
+    unrelized::Bool = false
 end
 
 @kwdef mutable struct MalfunctionsDDD <: Malfunctions

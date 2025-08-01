@@ -75,7 +75,7 @@ function VCheck(stimul::Stimul)
 end
 
 function ACheck(stimul::Stimul)
-    return stimul.type in ("A", "AR", "AN") ? true : false
+    return stimul.type in ("A", "AR") ? true : false
 end
 
 function mediana(vec)

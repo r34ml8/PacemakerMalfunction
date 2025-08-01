@@ -14,28 +14,47 @@ aai_fn_arr = String[]
 
 for fn in filenames_array
     rec = PM.get_data_from(fn, "hdr")
-    if rec.mode == 1
+    if rec.mode[1:3] == "VVI"
         push!(vvi_fn_arr, fn)
-    elseif rec.mode == 2
+    elseif rec.mode[1:3] == "AAI"
         println(fn)
         push!(aai_fn_arr, fn)
     end
 end
 
 function toXLSX(QRSes::Vector{PM.QRS}, stimuls::Vector{PM.Stimul})
-    dfQRS = DF.DataFrame(QRSes)
     dfStimul = DF.DataFrame(stimuls)
-    dfMalf = DF.DataFrame(getproperty.(stimuls, :malfunction))
 
-    XLSX.writetable("malf.xlsx", dfMalf, overwrite=true)
-    XLSX.writetable("QRS.xlsx", dfQRS, overwrite=true)
-    XLSX.writetable("stimuls.xlsx", dfStimul[:, 1:4], overwrite=true)
+    dfMalf = DF.DataFrame(getproperty.(stimuls, :malfunction))
+    for col in names(dfMalf)
+        dfMalf[!, col] = convert(Vector{Union{Bool, Nothing}}, dfMalf[!, col])
+    end
+
+    for i in 1:DF.nrow(dfMalf)
+        for j in 1:DF.ncol(dfMalf)
+            if !dfMalf[i, j]
+                dfMalf[i, j] = nothing
+            end
+        end
+    end
+
+    _RR = Int64[]
+    for stim in stimuls
+        push!(_RR, QRSes[stim.QRS_index].RR)
+    end
+    dfRR = DF.DataFrame(RR = _RR)
+
+    dfFinal = hcat(dfStimul[:, 1:4], dfRR, dfMalf)
+
+    XLSX.writetable("stimuls.xlsx", dfFinal, overwrite=true)
 end
 
 function analyze(fn::String)
     println(fn)
-    mkpBase = PM.get_data_from(fn, "mkp"; author)
-    rec = PM.get_data_from(fn, "hdr")
+    filepath_json = joinpath(path, "mkp", filename * "." * author, filename * ".json")
+    mkpBase = PM.get_data_from(filepath_json, "mkp")
+    filepath_hdr = joinpath(path, "bin", filename * ".hdr")
+    rec = PM.get_data_from(filepath_hdr, "hdr")
     QRSes, stimuls = PM.mkpSignals(mkpBase, rec)
     println(rec.base)
     PM.analyzeAAI(stimuls, QRSes, rec.base, rec.fs)
@@ -58,14 +77,19 @@ for fn in aai_fn_arr
     _, _, t = analyze(fn)
     println(t)
     markers(fn, t)
-    # getproperty.(QRSes, :position)
-    # getproperty.(stimuls, :position)
 end
 
-QRSes, stimuls, t = analyze(aai_fn_arr[1])
+QRSes, stimuls, t = analyze(aai_fn_arr[3])
 toXLSX(QRSes, stimuls)
 
 
+
+
+
+
+
+vect = [1, 2, 3]
+df = DF.DataFrame(Values = vect)
 
 
 # q, s, t = analyze(f)
@@ -108,7 +132,7 @@ for fn in vvi_fn_arr
     mkpBase = PM.get_data_from(fn, "mkp"; author)
     rec = PM.get_data_from(fn, "hdr")
     println(rec.base)
-    QRSes, stimuls = PM.mkpSignals(mkpBase, rec.mode, rec.base)
+    QRSes, stimuls = PM.mkpSignals(mkpBase, rec)
     PM.analyzeVVI(stimuls, QRSes, rec.base, rec.fs)
     println()
 end

@@ -12,6 +12,15 @@ function analyzeAAI(stimuls::Vector{Stimul},
 
             interval50 = MS2P.((base - MS50, base + MS50), fs)
 
+            if i > 1
+                stimuls[i - 1].malfunction.noAnswer = noAnswerCheckA(stimul, stimuls, curQRS)
+                if stimuls[i - 1].malfunction.noAnswer
+                    print("prev has no answer ")
+                else
+                    # print("has answer ")
+                end
+            end
+
             stimul.malfunction.normal = normalCheckA(stimul, stimuls, curQRS, prevQRS, interval50, base, fs)
             if stimul.malfunction.normal
                 # print("normal ")
@@ -38,15 +47,6 @@ function analyzeAAI(stimuls::Vector{Stimul},
                 print("oversensing ")
             else
                 # println("no oversensing ")
-            end
-            
-            if i > 1
-                stimuls[i - 1].malfunction.noAnswer = noAnswerCheckA(stimul, stimuls, curQRS)
-                if stimuls[i - 1].malfunction.noAnswer
-                    print("prev has no answer ")
-                else
-                    # print("has answer ")
-                end
             end
 
             stimul.malfunction.unrelized = unrelizedCheckA(stimul, curQRS, prevQRS)
@@ -149,8 +149,7 @@ end
 
 function noAnswerCheckA(stimul::Stimul, stimuls::Vector{Stimul},
     curQRS::QRS)
-    if (stimul.malfunction.normal ||
-        stimul.type == "A")
+    if (ACheck(stimul))
         ABefore = findStimulBefore(stimul.index, stimuls, 'A')
         if (!isnothing(ABefore) &&
             ABefore.QRS_index == curQRS.index)

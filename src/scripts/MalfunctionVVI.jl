@@ -1,4 +1,3 @@
-
 function analyzeVVI(stimuls::Vector{Stimul},
     QRSes::Vector{QRS}, base::Float64, fs::Float64
 )

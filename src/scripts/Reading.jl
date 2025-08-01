@@ -16,16 +16,7 @@ function hdr_reading(filepath_hdr)
     line = hdrstruct.stimulus
     data = split(line, " ")
 
-    data_mode = data[1][1:3]
-    _mode = 0
-
-    if (data_mode == "DDD")
-        _mode = 3
-    elseif (data_mode == "AAI")
-        _mode = 2
-    elseif (data_mode == "VVI")
-        _mode = 1
-    end
+    _mode = data[1]
     
     _base_vec = parse.(Int, split(data[2], "/"))
     _base_vec = round.(60 * 1000 ./ _base_vec)
@@ -34,7 +25,7 @@ function hdr_reading(filepath_hdr)
 
     _intervalAV = nothing
 
-    if _mode == 3 && length(data) == 3
+    if _mode == "DDD" && length(data) == 3
         vec_interval = parse.(Int, split(data[3][4:end], "-"))
         _intervalAV = length(vec_interval) == 2 ? (vec_interval[1], vec_interval[2]) : vec_interval[1]
     end

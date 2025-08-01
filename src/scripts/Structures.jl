@@ -10,7 +10,7 @@ const MS300 = 300
 
 mutable struct EcgRecord
     fs::Float64
-    mode::Int64
+    mode::String
     base::Union{Float64, Tuple{Float64, Float64}}
     intervalAV::Union{Nothing, Int64, Tuple{Int64, Int64}}
 end
@@ -65,20 +65,20 @@ mutable struct Stimul <: Signal
     QRS_index::Int64
     malfunction::Malfunctions
 
-    function Stimul(mkpBase::API.StdMkp, _index::Int64, QRSes::Vector{QRS}, mode::Int64)
+    function Stimul(mkpBase::API.StdMkp, _index::Int64, QRSes::Vector{QRS}, mode::String)
         _type = "U"
         # _type = mkpBase.stimtype[_index]
         _position = mkpBase.stimpos[_index]
         _QRS_index = findQRS(_position, QRSes).index
 
-        if mode == 3
-            _malfunction = MalfunctionsDDD()
-        elseif mode == 2
+        if mode[1:3] == "VVI"
+            _malfunction = MalfunctionsVVI()
+            _type = "V"
+        elseif mode[1:3] == "AAI"
             _malfunction = MalfunctionsAAI()
             _type = "A"
         else
-            _malfunction = MalfunctionsVVI()
-            _type = "V"
+            _malfunction = MalfunctionsDDD()
         end
 
         return new(_index, _type, _position, _QRS_index, _malfunction)
@@ -107,18 +107,26 @@ function mkpSignals(mkpBase::API.StdMkp, rec::EcgRecord)
         _stimuls[i] = Stimul(mkpBase, i, _QRSes, rec.mode)
     end
     
-    rec.base = checkBase(_QRSes, rec.base, rec.fs)
+    rec.base = checkBase(_stimuls, rec.base, rec.mode)
 
     return _QRSes, _stimuls
 end
 
-function checkBase(QRSes::Vector{QRS},
-    base::Union{Float64, Tuple{Float64, Float64}}, fs::Float64
+function checkBase(stimuls::Vector{Stimul},
+    base::Union{Float64, Tuple{Float64, Float64}},
+    mode::String
 )
+    _base = mediana(filter(!isnothing, CCArraySpawn(getproperty.(stimuls, :position))))
+    if length(mode) == 4
+        _base = 1000 / _base * 60
+        _base = round(_base / 5) * 5
+        _base = 60 / _base * 1000
+        return convert(Float64, _base)
+    end
+
     if length(base) == 1
         base = base[1]
     else
-        _base = mediana(filter(!isnothing, getproperty.(QRSes, :RR)))
         base = abs(base[1] - _base) < abs(base[2] - _base) ? base[1] : base[2]
     end
 
@@ -147,13 +155,13 @@ end
 #     return _SAWB, _VF, _C
 # end
 
-# function CCArraySpawn(_stimpos::Vector{Int64})
-#     n = length(_stimpos) - 1
+function CCArraySpawn(_stimpos::Vector{Int64})
+    n = length(_stimpos) - 1
 
-#     _CC = zeros(n)
-#     for i in 1:n
-#         _CC[i] = _stimpos[i + 1] - _stimpos[i]
-#     end
+    _CC = zeros(n)
+    for i in 1:n
+        _CC[i] = _stimpos[i + 1] - _stimpos[i]
+    end
     
-#     return _CC
-# end
+    return _CC
+end

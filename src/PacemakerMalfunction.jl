@@ -26,4 +26,7 @@ export analyzeVVI
 include("scripts\\MalfunctionAAI.jl")
 export analyzeAAI
 
+include("scripts\\Analyze.jl")
+export pacemaker_analyze
+
 end

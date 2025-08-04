@@ -12,7 +12,7 @@ mutable struct EcgRecord
     fs::Float64
     mode::String
     base::Union{Float64, Tuple{Float64, Float64}}
-    intervalAV::Union{Nothing, Int64, Tuple{Int64, Int64}}
+    intervalAV::Union{Nothing, Tuple{Int64, Int64}}
 end
 
 abstract type Signal end
@@ -56,6 +56,15 @@ end
 end
 
 @kwdef mutable struct MalfunctionsDDD <: Malfunctions
+    normal::Bool = false
+    oversensingV::Bool = false
+    undersensingV::Bool = false
+    oversensingA::Bool = false
+    undersensingA::Bool = false
+    exactlyUndersensingA::Bool = false
+    oversensingAV::Bool = false
+    noAnswerV::Bool = false
+    unrelized::Bool = false
 end
 
 mutable struct Stimul <: Signal
@@ -108,6 +117,9 @@ function mkpSignals(mkpBase::API.StdMkp, rec::EcgRecord)
     end
     
     rec.base = checkBase(_stimuls, rec.base, rec.mode)
+    if rec.mode[1:3] == "DDD" && isnothing(rec.intervalAV)
+        rec.intervalAV = countingAV(_stimuls)
+    end
 
     return _QRSes, _stimuls
 end

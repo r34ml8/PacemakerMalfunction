@@ -16,10 +16,21 @@ function satisfyCheck(curQRS::QRS, prevQRS::Union{Nothing, QRS})
     return true
 end 
 
-# function findPrevQRS(stimul::Stimul, QRSes::Vector{QRS})
-#     i = stimul.QRS_index
-#     return i > 1 ? QRSes[i - 1] : nothing
-# end
+function countingAV(stimuls::Vector{Stimul})
+    stimulBefore = stimuls[1]
+    n = length(stimuls)
+    AV = Int64[]
+    
+    for i in 2:n
+        if stimuls[i].QRS_index == stimulBefore.QRS_index
+            push!(AV, stimuls[i].position - stimulBefore.position)
+        end
+        stimulBefore = stimuls[i]
+    end
+
+    _AV = mediana(AV)
+    return (_AV, _AV)
+end
 
 function ST(curQRS::QRS)
     excess = curQRS.pos_end - curQRS.pos_end

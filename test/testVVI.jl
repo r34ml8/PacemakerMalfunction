@@ -1,5 +1,35 @@
 using Test
 
+XLSX.writetable("103019_2.xlsx", PM.pacemaker_analyze("files/103019_2.hdr", "files/103019_2.json"))
+XLSX.writetable("oxst003269_2.xlsx", PM.pacemaker_analyze("files/oxst003269_2.hdr", "files/oxst003269_2.json"))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 #TODO:
 # 1. выбрать самые ужасные записи (пусть будут по две)
 # 2. составить референтные таблицы malf.xlsx на глаз
@@ -9,3 +39,5 @@ using Test
 # 6. прогнать jsonы и hdrы через pacemaker_analyze()
 # 7. сравнить
 # 8. считать статистики
+
+# 103019_2 oxst003269_2

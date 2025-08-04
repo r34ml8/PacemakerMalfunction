@@ -1,0 +1,21 @@
+12 1000.0 1.1848
+69215060 -1 2016-03-10T12:58:00
+I II III AVR AVL AVF V1 V2 V3 V4 V5 V6 
+1.1848 1.1848 1.1848 1.1848 1.1848 1.1848 1.1848 1.1848 1.1848 1.1848 1.1848 1.1848 
+µV µV µV µV µV µV µV µV µV µV µV µV 
+int32 int32 int32 int32 int32 int32 int32 int32 int32 int32 int32 int32 
+tohead
+s:fam:Немирский
+s:nam:Георгий
+s:sub:Иосифович
+s:sex:м
+dt:Birth:1935-02-21T00:00:00
+l:hgh:168.0
+l:wgh:80.0
+l:monNum:101
+l:monTyp:34
+l:ProgID:6
+l:Stimulus:1
+s:StimulusType:VVI 65
+dt:Start:2016-03-10T12:58:00
+dt:HeadStart:2016-03-10T12:57:30

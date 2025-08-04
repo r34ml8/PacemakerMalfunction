@@ -1,0 +1,21 @@
+12 1028.0 0.9653
+66578892 -1 2015-11-25T14:25:00
+I II III AVR AVL AVF V1 V2 V3 V4 V5 V6 
+0.9653 0.9653 0.9653 0.9653 0.9653 0.9653 0.9653 0.9653 0.9653 0.9653 0.9653 0.9653 
+µV µV µV µV µV µV µV µV µV µV µV µV 
+int32 int32 int32 int32 int32 int32 int32 int32 int32 int32 int32 int32 
+tohead
+s:fam:Яковлев
+s:nam:Владимир
+s:sub:Лейвикович
+s:sex:м
+dt:Birth:1939-02-06T00:00:00
+l:hgh:170.0
+l:wgh:82.0
+l:monNum:532
+l:monTyp:24
+l:ProgID:2
+l:Stimulus:1
+s:StimulusType:VVI 60
+dt:Start:2015-11-25T14:25:00
+dt:HeadStart:2015-11-25T14:23:39

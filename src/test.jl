@@ -13,7 +13,8 @@ vvi_fn_arr = String[]
 aai_fn_arr = String[]
 
 for fn in filenames_array
-    rec = PM.get_data_from(fn, "hdr")
+    filepath = joinpath(path, "bin", fn * ".hdr")
+    rec = PM.get_data_from(filepath, "hdr")
     if rec.mode[1:3] == "VVI"
         push!(vvi_fn_arr, fn)
     elseif rec.mode[1:3] == "AAI"
@@ -51,13 +52,13 @@ end
 
 function analyze(fn::String)
     println(fn)
-    filepath_json = joinpath(path, "mkp", filename * "." * author, filename * ".json")
+    filepath_json = joinpath(path, "mkp", fn * "." * author, fn * ".json")
     mkpBase = PM.get_data_from(filepath_json, "mkp")
-    filepath_hdr = joinpath(path, "bin", filename * ".hdr")
+    filepath_hdr = joinpath(path, "bin", fn * ".hdr")
     rec = PM.get_data_from(filepath_hdr, "hdr")
     QRSes, stimuls = PM.mkpSignals(mkpBase, rec)
     println(rec.base)
-    PM.analyzeAAI(stimuls, QRSes, rec.base, rec.fs)
+    # PM.analyzeVVI(stimuls, QRSes, rec.base, rec.fs)
     println()
     return QRSes, stimuls, getproperty.(stimuls, :type)
 end
@@ -73,7 +74,7 @@ function markers(filen::String, t)
     FileUtils.write_stdmkp_json(joinpath(path, "mkp", filen * "." * "res", filen * ".json"), mkp_)
 end
 
-for fn in aai_fn_arr
+for fn in vvi_fn_arr
     _, _, t = analyze(fn)
     println(t)
     markers(fn, t)
@@ -83,8 +84,16 @@ QRSes, stimuls, t = analyze(aai_fn_arr[3])
 toXLSX(QRSes, stimuls)
 
 
+filen = "103019_2"
+filepath_hdr = joinpath(path, "bin", filen * ".hdr")
+filepath_json = joinpath(path, "mkp", filen * "." * author, filen * ".json")
+PM.pacemaker_analyze(filepath_hdr, filepath_json)
 
 
+XLSX.writetable("103019_2.xlsx", PM.pacemaker_analyze("../test/files/103019_2.hdr", "../test/files/103019_2.json"))
+XLSX.writetable("oxst003269_2.xlsx", PM.pacemaker_analyze("../test/files/oxst003269_2.hdr", "../test/files/oxst003269_2.json"))
+
+ddd_fn = ["00018409_1", "00018409_2", "00018409_3", "00018409_4", "00018409_5"]
 
 
 

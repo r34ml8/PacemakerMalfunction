@@ -12,5 +12,5 @@ function pacemaker_analyze(hdr_path::String, mkp_path::String)
 
     dfMalf = DataFrame(getproperty.(stimuls, :malfunction))
 
-    return dfMalf
+    return dfMalf[2:end]
 end

@@ -26,6 +26,9 @@ export analyzeVVI
 include("scripts\\MalfunctionAAI.jl")
 export analyzeAAI
 
+include("scripts\\StimulClassifier.jl")
+export stimulClassifier
+
 include("scripts\\Analyze.jl")
 export pacemaker_analyze
 

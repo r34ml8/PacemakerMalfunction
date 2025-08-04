@@ -1,12 +1,11 @@
 import FileUtils
 
-function get_data_from(filename, marker; author="", path="C:\\Users\\user\\course\\STDECGDB")
+function get_data_from(filepath::String, marker::String)
     if (marker == "mkp")
-        filepath_json = joinpath(path, "mkp", filename * "." * author, filename * ".json")
-        return FileUtils.read_stdmkp_json(filepath_json)
+        println(filepath)
+        return FileUtils.read_stdmkp_json(filepath)
     elseif (marker == "hdr")
-        filepath_hdr = joinpath(path, "bin", filename * ".hdr")
-        return hdr_reading(filepath_hdr)
+        return hdr_reading(filepath)
     end
 end
 
@@ -27,7 +26,7 @@ function hdr_reading(filepath_hdr)
 
     if _mode == "DDD" && length(data) == 3
         vec_interval = parse.(Int, split(data[3][4:end], "-"))
-        _intervalAV = length(vec_interval) == 2 ? (vec_interval[1], vec_interval[2]) : vec_interval[1]
+        _intervalAV = length(vec_interval) == 2 ? (vec_interval[1], vec_interval[2]) : (vec_interval[1], vec_interval[1])
     end
 
     return EcgRecord(_fs, _mode, _base, _intervalAV)

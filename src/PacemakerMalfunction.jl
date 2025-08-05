@@ -1,6 +1,7 @@
 module PacemakerMalfunction
 
 import FileUtils.StdEcgDbAPI as API
+import DataFrames as DF
 
 include("scripts\\Structures.jl")
 export Signal, QRS, Stimul,
@@ -10,9 +11,6 @@ export Signal, QRS, Stimul,
 
 include("scripts\\Reading.jl")
 export get_data_from
-
-include("scripts\\StimulClassifier.jl")
-export classify_spikes
 
 include("scripts\\SecondaryFunctions.jl")
 export ST, isInsideInterval, isMore,

@@ -6,21 +6,75 @@ import XLSX
 using FileUtils
 
 filenames_array = readlines("C:\\Users\\user\\course\\STDECGDB\\dbstate\\#stim.txt")
-author = "v2_0_0_dev"
+author = "avt"
 path = "C:\\Users\\user\\course\\STDECGDB"
 
-vvi_fn_arr = String[]
-aai_fn_arr = String[]
+ddd_avt = String[]
 
-for fn in filenames_array
-    filepath = joinpath(path, "bin", fn * ".hdr")
-    rec = PM.get_data_from(filepath, "hdr")
-    if rec.mode[1:3] == "VVI"
-        push!(vvi_fn_arr, fn)
-    elseif rec.mode[1:3] == "AAI"
-        println(fn)
-        push!(aai_fn_arr, fn)
+for filen in filenames_array
+    filepath_hdr = joinpath(path, "bin", filen * ".hdr")
+    filepath_json = joinpath(path, "mkp", filen * "." * author, filen * ".json")
+    try
+        PM.get_data_from(filepath_json, "mkp")
+        PM.get_data_from(filepath_hdr, "hdr")
+        push!(ddd_avt, filen)
+    catch e
+        # println("Errorrr: ")
     end
+end
+
+
+
+function analyze(fn::String)
+    println(fn)
+    filepath_json = joinpath(path, "mkp", fn * "." * author, fn * ".json")
+    mkpBase = PM.get_data_from(filepath_json, "mkp")
+    filepath_hdr = joinpath(path, "bin", fn * ".hdr")
+    rec = PM.get_data_from(filepath_hdr, "hdr")
+    QRSes, stimuls = PM.mkpSignals(mkpBase, rec)
+    println(rec.base)
+    PM.stimulClassifier(stimuls, QRSes, rec)
+    # PM.analyzeVVI(stimuls, QRSes, rec.base, rec.fs)
+    println()
+    return QRSes, stimuls, getproperty.(stimuls, :type)
+end
+
+function markers(filen::String, t)
+    filepath_json = joinpath(path, "mkp", filen * "." * author, filen * ".json")
+    mkp_ = FileUtils.read_stdmkp_json(filepath_json)
+
+    newforms = t
+    mkp_.stimtype = newforms
+    mkp_.author = "res"
+    mkpath(joinpath(path, "mkp", filen * "." * "res"))
+    FileUtils.write_stdmkp_json(joinpath(path, "mkp", filen * "." * "res", filen * ".json"), mkp_)
+end
+
+for fn in ddd_avt
+    _, _, t = analyze(fn)
+    println(t)
+    markers(fn, t)
+end
+
+filepath_hdr = joinpath(path, "bin", ddd_avt[1] * ".bin")
+
+ecg, h = read_bin_record(filepath_hdr)
+
+println(ecg)
+ecg
+
+function read_bin_record(filepath::String, h::Union{TableHeader, Nothing} = nothing)
+    if isnothing(h)
+        h = readheader(first(splitext(filepath))*".hdr")
+    end
+    rawdata = FileUtils.readbin(filepath, h)
+    data = FileUtils.Tables.columns(FileUtils.StructVector(rawdata)) |> collect
+    # ch_data = [round.(x.*y.encoding.lsb, digits = 3) for (x,y) in zip(data, h.encodings)] # умножение всех каналов на их lsb
+    # TODO: ограничиваю 3-мя символами после запятой - так и оставить?
+
+    ch_data = [round.(x.*y.encoding.lsb) for (x,y) in zip(data, h.encodings)] # умножение всех каналов на их lsb И ОКРУГЛЕНИЕ ДО ЦЕЛЫХ МКВ
+
+    return ch_data, h
 end
 
 function toXLSX(QRSes::Vector{PM.QRS}, stimuls::Vector{PM.Stimul})
@@ -50,34 +104,18 @@ function toXLSX(QRSes::Vector{PM.QRS}, stimuls::Vector{PM.Stimul})
     XLSX.writetable("stimuls.xlsx", dfFinal, overwrite=true)
 end
 
-function analyze(fn::String)
-    println(fn)
-    filepath_json = joinpath(path, "mkp", fn * "." * author, fn * ".json")
-    mkpBase = PM.get_data_from(filepath_json, "mkp")
-    filepath_hdr = joinpath(path, "bin", fn * ".hdr")
-    rec = PM.get_data_from(filepath_hdr, "hdr")
-    QRSes, stimuls = PM.mkpSignals(mkpBase, rec)
-    println(rec.base)
-    # PM.analyzeVVI(stimuls, QRSes, rec.base, rec.fs)
-    println()
-    return QRSes, stimuls, getproperty.(stimuls, :type)
-end
+vvi_fn_arr = String[]
+aai_fn_arr = String[]
 
-function markers(filen::String, t)
-    filepath_json = joinpath(path, "mkp", filen * "." * author, filen * ".json")
-    mkp_ = FileUtils.read_stdmkp_json(filepath_json)
-
-    newforms = t
-    mkp_.stimtype = newforms
-    mkp_.author = "res"
-    mkpath(joinpath(path, "mkp", filen * "." * "res"))
-    FileUtils.write_stdmkp_json(joinpath(path, "mkp", filen * "." * "res", filen * ".json"), mkp_)
-end
-
-for fn in vvi_fn_arr
-    _, _, t = analyze(fn)
-    println(t)
-    markers(fn, t)
+for fn in filenames_array
+    filepath = joinpath(path, "bin", fn * ".hdr")
+    rec = PM.get_data_from(filepath, "hdr")
+    if rec.mode[1:3] == "VVI"
+        push!(vvi_fn_arr, fn)
+    elseif rec.mode[1:3] == "AAI"
+        println(fn)
+        push!(aai_fn_arr, fn)
+    end
 end
 
 QRSes, stimuls, t = analyze(aai_fn_arr[3])
@@ -93,7 +131,6 @@ PM.pacemaker_analyze(filepath_hdr, filepath_json)
 XLSX.writetable("103019_2.xlsx", PM.pacemaker_analyze("../test/files/103019_2.hdr", "../test/files/103019_2.json"))
 XLSX.writetable("oxst003269_2.xlsx", PM.pacemaker_analyze("../test/files/oxst003269_2.hdr", "../test/files/oxst003269_2.json"))
 
-ddd_fn = ["00018409_1", "00018409_2", "00018409_3", "00018409_4", "00018409_5"]
 
 
 

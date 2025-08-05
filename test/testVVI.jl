@@ -1,6 +1,6 @@
 using Test
 
-XLSX.writetable("103019_2.xlsx", PM.pacemaker_analyze("files/103019_2.hdr", "files/103019_2.json"))
+XLSX.writetable("103019_2.xlsx", PM.pacemaker_analyze(joinpath(@__DIR__, "files", "103019_2.hdr"), joinpath(@__DIR__, "files", "103019_2.json")))
 XLSX.writetable("oxst003269_2.xlsx", PM.pacemaker_analyze("files/oxst003269_2.hdr", "files/oxst003269_2.json"))
 
 

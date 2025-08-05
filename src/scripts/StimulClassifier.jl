@@ -1,8 +1,8 @@
 function stimulClassifier(stimuls::Vector{Stimul},
     QRSes::Vector{QRS}, rec::EcgRecord
     )
-    AV50 = MS2P((rec.intervalAV[1] - MS50, rec.interval + MS50), rec.fs)
-    base50 = MS2P((rec.base - MS50, rec.base + MS50), rec.fs)
+    AV50 = MS2P.((rec.intervalAV[1] - MS50, rec.intervalAV[2] + MS50), rec.fs)
+    base50 = MS2P.((rec.base - MS50, rec.base + MS50), rec.fs)
 
     for (i, stimul) in enumerate(stimuls)
         QRSi = stimul.QRS_index
@@ -11,35 +11,35 @@ function stimulClassifier(stimuls::Vector{Stimul},
         prevQRS = QRSi > 1 ? QRSes[QRSi - 1] : nothing
 
         if satisfyCheck(curQRS, prevQRS)
-            ABefore = findStimulBefore(stimul.index, stimuls, 'A')
-            VBefore = findStimulBefore(stimul.index, stimuls, 'V')
-
-            if (QRSi == ABefore.QRS_index &&
-                isInsideInterval(stimul, ABefore, AV50) ||
-                isInsideInterval(stimul, curQRS, MS2P((0, MS50), rec.fs)) ||
+            ABefore = findStimulBefore(i, stimuls, 'A')
+            VBefore = findStimulBefore(i, stimuls, 'V')
+            
+            if (isInsideInterval(stimul, ABefore, AV50) &&
+                QRSi == ABefore.QRS_index ||
+                isInsideInterval(stimul, curQRS, MS2P.((0, MS50), rec.fs)) ||
                 isInsideInterval(stimul, VBefore, base50)
             )
-                return "V"
+                stimul.type = "V"
             elseif (i < length(stimuls) &&
-                stimuls[QRSi + 1].QRS_index == QRSi
+                stimuls[i + 1].QRS_index == QRSi
             )
                 if (curQRS.type[1] == 'C' &&
                     isInsideInterval(stimul, ABefore, base50) || 
-                    isInsideInterval(stimul, stimuls[QRSi + 1], AV50)
+                    isInsideInterval(stimul, stimuls[i + 1], AV50)
                 )
-                    return "A"
+                    stimul.type = "A"
                 end
             elseif (i < length(stimuls) &&
-                isInsideInterval(stimul, stimuls[QRSi + 1], base50) ||
+                isInsideInterval(stimul, stimuls[i + 1], base50) ||
                 curQRS.type[1] != 'C' &&
                 isInsideInterval(stimul, ABefore, base50)
             )
-                return "A"
+                stimul.type = "A"
             else
-                return "U"
+                stimul.type = "U"
             end
         else
-            return "U"
+            stimul.type = "U"
         end
     end
 end

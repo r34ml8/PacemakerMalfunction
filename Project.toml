@@ -12,12 +12,14 @@ IBoxAccess = "1607262a-405a-4f9a-89bc-45a61e12db11"
 XLSX = "fdbf4ff8-1666-58a4-91e7-1b58723a45e0"
 wfdb_wrapper_jll = "cfa65b43-6878-5963-b59c-e7edc60d5dc9"
 
+
 [sources]
 Descriptors = {url = "https://github.com/IncartStudents/Descriptors.jl"}
 FileUnv_jll = {url = "https://github.com/a-mikhaylov/FileUnv_jll.jl.git"}
 FileUtils = {url = "https://github.com/IncartStudents/FileUtils.jl"}
 IBoxAccess = {url = "https://github.com/IncartStudents/IBoxAccess.jl"}
 wfdb_wrapper_jll = {url = "https://github.com/sairus7/wfdb_wrapper_jll.jl.git"}
+
 
 [compat]
 DataFrames = "1.7.0"

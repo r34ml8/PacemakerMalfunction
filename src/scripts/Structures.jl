@@ -100,6 +100,7 @@ function findQRS(stimulPosition::Int64, QRSes::Vector{QRS})
             return QRSes[i]
         end
     end
+    return QRSes[end]
 end
 
 function mkpSignals(mkpBase::API.StdMkp, rec::EcgRecord)

@@ -1,15 +1,18 @@
 import FileUtils
+# import StdEcgAlgs.Readers as Reader
 
 function get_data_from(filepath::String, marker::String)
     if (marker == "mkp")
-        println(filepath)
+        @info filepath
         return FileUtils.read_stdmkp_json(filepath)
     elseif (marker == "hdr")
         return hdr_reading(filepath)
+    elseif (marker == "bin")
+        return bin_reading(filepath)
     end
 end
 
-function hdr_reading(filepath_hdr)
+function hdr_reading(filepath_hdr::String)
     _fs = FileUtils.readhdr(filepath_hdr).fs
     _, hdrstruct = FileUtils.readhdr_patient_exam(filepath_hdr)
     line = hdrstruct.stimulus
@@ -31,3 +34,7 @@ function hdr_reading(filepath_hdr)
 
     return EcgRecord(_fs, _mode, _base, _intervalAV)
 end
+
+# function bin_reading(filepath_bin::String)
+#     return Reader.read_bin_record(filepath_bin)
+# end

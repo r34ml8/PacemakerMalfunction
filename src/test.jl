@@ -6,7 +6,7 @@ import XLSX
 using FileUtils
 
 filenames_array = readlines("C:\\Users\\user\\course\\STDECGDB\\dbstate\\#stim.txt")
-author = "avt"
+author = "v2_0_0_dev"
 path = "C:\\Users\\user\\course\\STDECGDB"
 
 ddd_avt = String[]
@@ -23,11 +23,9 @@ for filen in filenames_array
     end
 end
 
-
-
 function analyze(fn::String)
     println(fn)
-    filepath_json = joinpath(path, "mkp", fn * "." * author, fn * ".json")
+    filepath_json = joinpath(path, "mkp", fn * "." * "0", fn * ".json")
     mkpBase = PM.get_data_from(filepath_json, "mkp")
     filepath_hdr = joinpath(path, "bin", fn * ".hdr")
     rec = PM.get_data_from(filepath_hdr, "hdr")
@@ -40,7 +38,7 @@ function analyze(fn::String)
 end
 
 function markers(filen::String, t)
-    filepath_json = joinpath(path, "mkp", filen * "." * author, filen * ".json")
+    filepath_json = joinpath(path, "mkp", filen * "." * "0", filen * ".json")
     mkp_ = FileUtils.read_stdmkp_json(filepath_json)
 
     newforms = t
@@ -49,6 +47,8 @@ function markers(filen::String, t)
     mkpath(joinpath(path, "mkp", filen * "." * "res"))
     FileUtils.write_stdmkp_json(joinpath(path, "mkp", filen * "." * "res", filen * ".json"), mkp_)
 end
+
+analyze("00020489_2")
 
 for fn in ddd_avt
     _, _, t = analyze(fn)

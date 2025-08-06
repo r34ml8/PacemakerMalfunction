@@ -4,6 +4,7 @@ function stimulClassifier(stimuls::Vector{Stimul},
     AV50 = MS2P.((rec.intervalAV[1] - MS50, rec.intervalAV[2] + MS50), rec.fs)
     base50 = MS2P.((rec.base - MS50, rec.base + MS50), rec.fs)
 
+    @info rec.intervalAV
     for (i, stimul) in enumerate(stimuls)
         QRSi = stimul.QRS_index
 
@@ -16,25 +17,18 @@ function stimulClassifier(stimuls::Vector{Stimul},
             
             if (isInsideInterval(stimul, ABefore, AV50) &&
                 QRSi == ABefore.QRS_index ||
-                isInsideInterval(stimul, curQRS, MS2P.((0, MS50), rec.fs)) ||
                 isInsideInterval(stimul, VBefore, base50)
             )
                 stimul.type = "V"
             elseif (i < length(stimuls) &&
-                stimuls[i + 1].QRS_index == QRSi
-            )
-                if (curQRS.type[1] == 'C' &&
-                    isInsideInterval(stimul, ABefore, base50) || 
-                    isInsideInterval(stimul, stimuls[i + 1], AV50)
-                )
-                    stimul.type = "A"
-                end
-            elseif (i < length(stimuls) &&
-                isInsideInterval(stimul, stimuls[i + 1], base50) ||
-                curQRS.type[1] != 'C' &&
+                (stimuls[i + 1].QRS_index == QRSi &&
+                isInsideInterval(stimul, stimuls[i + 1], AV50) ||
+                isInsideInterval(stimul, stimuls[i + 1], base50)) ||
                 isInsideInterval(stimul, ABefore, base50)
             )
                 stimul.type = "A"
+            elseif isInsideInterval(stimul, curQRS, MS2P.((0, MS50), rec.fs))
+                stimul.type = "V"
             else
                 stimul.type = "U"
             end

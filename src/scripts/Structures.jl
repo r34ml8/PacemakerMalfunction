@@ -103,6 +103,18 @@ function findQRS(stimulPosition::Int64, QRSes::Vector{QRS})
     return QRSes[end]
 end
 
+function checkQRS(stimuls::Vector{Stimul}, QRSes::Vector{QRS})
+    for stimul in stimuls
+        QRSi = stimul.QRS_index
+
+        if QRSi > 1 && (stimul.position in QRSes[QRSi - 1].position:QRSes[QRSi - 1].pos_end)
+            stimul.QRS_index -= 1
+        end
+    end
+    
+    return stimuls
+end
+
 function mkpSignals(mkpBase::API.StdMkp, rec::EcgRecord)
     n = length(mkpBase.QRS_form)
     _QRSes = Vector{QRS}(undef, n)
@@ -116,10 +128,15 @@ function mkpSignals(mkpBase::API.StdMkp, rec::EcgRecord)
     for i in 1:n
         _stimuls[i] = Stimul(mkpBase, i, _QRSes, rec.mode)
     end
-    
+
+    @info rec.base
     rec.base = checkBase(_stimuls, rec.base, rec.mode)
-    if rec.mode[1:3] == "DDD" && isnothing(rec.intervalAV)
-        rec.intervalAV = countingAV(_stimuls)
+    if rec.mode[1:3] == "DDD"
+        _stimuls = checkQRS(_stimuls, _QRSes)
+
+        if isnothing(rec.intervalAV)
+            rec.intervalAV = countingAV(_stimuls)
+        end
     end
 
     return _QRSes, _stimuls
@@ -129,7 +146,15 @@ function checkBase(stimuls::Vector{Stimul},
     base::Union{Float64, Tuple{Float64, Float64}},
     mode::String
 )
-    _base = mediana(filter(!isnothing, CCArraySpawn(getproperty.(stimuls, :position))))
+    CC = CCArraySpawn(getproperty.(stimuls, :position))
+    _base = mediana(filter(!isnothing, CC))
+
+    if mode[1:3] == "DDD"
+        CC = filter(x -> !(x in (_base - 200):(_base + 200)), CC)
+        _base += mediana(CC)
+    end
+
+    @info _base
     if length(mode) == 4
         _base = 1000 / _base * 60
         _base = round(_base / 5) * 5
@@ -176,5 +201,6 @@ function CCArraySpawn(_stimpos::Vector{Int64})
         _CC[i] = _stimpos[i + 1] - _stimpos[i]
     end
     
+    @info _CC
     return _CC
 end

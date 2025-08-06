@@ -3,7 +3,6 @@ import FileUtils
 
 function get_data_from(filepath::String, marker::String)
     if (marker == "mkp")
-        @info filepath
         return FileUtils.read_stdmkp_json(filepath)
     elseif (marker == "hdr")
         return hdr_reading(filepath)

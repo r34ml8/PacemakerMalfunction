@@ -109,3 +109,18 @@ function findQRSBefore(stimul::Stimul, QRSes::Vector{QRS}, typeStr::String)
 
     return nothing
 end
+
+function inQRS(QRS_i::Int64, stimul::Union{Nothing, Stimul})
+    return !isnothing(stimul) && stimul.QRS_index == QRS_i ? true : false
+end
+
+function GoodAV(stimul::Stimul, _QRS::QRS, rec::EcgRecord)
+    if (isnothing(_QRS.AV) ||
+        _QRS.AV in MS2P.((rec.intervalAV[1] - MS50, rec.intervalAV[2] + MS50), rec.fs) ||
+        isInsideInterval(stimul, _QRS, MS2P.((0, rec.intervalAV[2]), rec.fs))
+    )
+        return true
+    end
+    
+    return false
+end

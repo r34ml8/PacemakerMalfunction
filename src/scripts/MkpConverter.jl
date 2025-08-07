@@ -12,7 +12,7 @@ const ISSUE_CODE = Dict{String, Enum}(
 )
 
 filenames_array = readlines("C:\\Users\\user\\course\\STDECGDB\\dbstate\\#stim.txt")
-author = "v2_0_0_dev"
+author = "0"
 path = "C:\\Users\\user\\course\\STDECGDB"
 
 vvi_fn_arr = String[]

@@ -23,6 +23,7 @@ mutable struct QRS <: Signal
     position::Int64
     pos_end::Int64
     RR::Union{Int64, Nothing}
+    AV::Union{Int64, Nothing}
 
     function QRS(mkpBase::API.StdMkp, _index::Int64)
         _type = mkpBase.QRS_form[_index]
@@ -30,7 +31,7 @@ mutable struct QRS <: Signal
         _pos_end = mkpBase.QRS_end[_index]
         _RR = _index > 1 ? _pos_onset - mkpBase.QRS_onset[_index - 1] : nothing
 
-        return new(_index, _type, _pos_onset, _pos_end, _RR)
+        return new(_index, _type, _pos_onset, _pos_end, _RR, nothing)
     end
 end
 
@@ -74,11 +75,11 @@ mutable struct Stimul <: Signal
     QRS_index::Int64
     malfunction::Malfunctions
 
-    function Stimul(mkpBase::API.StdMkp, _index::Int64, QRSes::Vector{QRS}, mode::String)
+    function Stimul(mkpBase::API.StdMkp, _index::Int64, QRSes::Vector{QRS}, mode::String, fs::Float64)
         _type = "U"
         # _type = mkpBase.stimtype[_index]
         _position = mkpBase.stimpos[_index]
-        _QRS_index = findQRS(_position, QRSes).index
+        _QRS_index = findQRS(_position, QRSes, fs).index
 
         if mode[1:3] == "VVI"
             _malfunction = MalfunctionsVVI()
@@ -94,9 +95,11 @@ mutable struct Stimul <: Signal
     end
 end
 
-function findQRS(stimulPosition::Int64, QRSes::Vector{QRS})
+function findQRS(stimulPosition::Int64, QRSes::Vector{QRS}, fs::Float64)
+    errb = floor(Int, 0.03 * fs)
+
     for (i, pos) in enumerate(getproperty.(QRSes, :position))
-        if pos + 15 >= stimulPosition
+        if pos + errb >= stimulPosition
             return QRSes[i]
         end
     end
@@ -126,16 +129,21 @@ function mkpSignals(mkpBase::API.StdMkp, rec::EcgRecord)
     _stimuls = Vector{Stimul}(undef, n)
     # stimulForms = classify_spikes
     for i in 1:n
-        _stimuls[i] = Stimul(mkpBase, i, _QRSes, rec.mode)
+        _stimuls[i] = Stimul(mkpBase, i, _QRSes, rec.mode, rec.fs)
     end
-
-    @info rec.base
+    @info rec.mode
     rec.base = checkBase(_stimuls, rec.base, rec.mode)
     if rec.mode[1:3] == "DDD"
         _stimuls = checkQRS(_stimuls, _QRSes)
 
+        stimtype = stimul_type(mkpBase.stimpos, mkpBase.QRS_onset, floor(Int, 0.25 * rec.fs), floor(Int, 0.03 * rec.fs))
+        for (i, stimul) in enumerate(_stimuls)
+            stimul.type = stimtype[i]
+        end
+
         if isnothing(rec.intervalAV)
             rec.intervalAV = countingAV(_stimuls)
+            @info rec.intervalAV
         end
     end
 
@@ -151,10 +159,11 @@ function checkBase(stimuls::Vector{Stimul},
 
     if mode[1:3] == "DDD"
         CC = filter(x -> !(x in (_base - 200):(_base + 200)), CC)
-        _base += mediana(CC)
+        if length(CC) > 0
+            _base += mediana(CC)
+        end
     end
 
-    @info _base
     if length(mode) == 4
         _base = 1000 / _base * 60
         _base = round(_base / 5) * 5
@@ -201,6 +210,5 @@ function CCArraySpawn(_stimpos::Vector{Int64})
         _CC[i] = _stimpos[i + 1] - _stimpos[i]
     end
     
-    @info _CC
     return _CC
 end

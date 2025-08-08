@@ -27,8 +27,8 @@ function countingAV(stimuls::Vector{Stimul})
         end
         stimulBefore = stimuls[i]
     end
-
-    _AV = mediana(AV)
+    
+    _AV = length(AV) > 0 ? mediana(AV) : 0
     return (_AV, _AV)
 end
 
@@ -114,9 +114,9 @@ function inQRS(QRS_i::Int64, stimul::Union{Nothing, Stimul})
     return !isnothing(stimul) && stimul.QRS_index == QRS_i ? true : false
 end
 
-function GoodAV(stimul::Stimul, _QRS::QRS, rec::EcgRecord)
+function goodAV(stimul::Stimul, _QRS::QRS, rec::EcgRecord, AV50::Tuple{Int64, Int64})
     if (isnothing(_QRS.AV) ||
-        _QRS.AV in MS2P.((rec.intervalAV[1] - MS50, rec.intervalAV[2] + MS50), rec.fs) ||
+        _QRS.AV in AV50 ||
         isInsideInterval(stimul, _QRS, MS2P.((0, rec.intervalAV[2]), rec.fs))
     )
         return true

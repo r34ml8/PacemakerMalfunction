@@ -24,6 +24,9 @@ export analyzeVVI
 include("scripts\\MalfunctionAAI.jl")
 export analyzeAAI
 
+include("scripts\\MalfunctionDDD.jl")
+export analyzeDDD
+
 include("scripts\\StimulClassifier.jl")
 export stimulClassifier
 

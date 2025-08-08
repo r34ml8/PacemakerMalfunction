@@ -74,6 +74,7 @@ mutable struct Stimul <: Signal
     position::Int64
     QRS_index::Int64
     malfunction::Malfunctions
+    stimulVerification::Union{Nothing, String}
 
     function Stimul(mkpBase::API.StdMkp, _index::Int64, QRSes::Vector{QRS}, mode::String, fs::Float64)
         _type = "U"
@@ -91,7 +92,7 @@ mutable struct Stimul <: Signal
             _malfunction = MalfunctionsDDD()
         end
 
-        return new(_index, _type, _position, _QRS_index, _malfunction)
+        return new(_index, _type, _position, _QRS_index, _malfunction, nothing)
     end
 end
 

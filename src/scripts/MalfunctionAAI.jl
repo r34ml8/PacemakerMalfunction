@@ -72,7 +72,6 @@ function normalCheckA(stimul::Stimul, stimuls::Vector{Stimul},
         ABefore.QRS_index == curQRS.index &&
         ABefore.malfunction.normal
     )
-        println("hereherehere")
         return false
     end
 
@@ -95,9 +94,9 @@ end
 function undersensingCheckA(stimul::Stimul, QRSes::Vector{QRS},
     base::Float64, fs::Float64
 )
-    # if stimul.malfunction.normal
-    #     return false
-    # end
+    if stimul.malfunction.normal
+        return false
+    end
 
     SAWB = findQRSBefore(stimul, QRSes, "SAWB")
     res = isInsideInterval(stimul, SAWB, MS2P.((0, base - MS300), fs))

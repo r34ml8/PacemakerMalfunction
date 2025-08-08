@@ -18,20 +18,9 @@ path = "C:\\Users\\user\\course\\STDECGDB"
 vvi_fn_arr = String[]
 aai_fn_arr = String[]
 
-println(aai_fn_arr)
 
-for fn in filenames_array
-    filepath = joinpath(path, "bin", fn * ".hdr")
-    rec = PM.get_data_from(filepath, "hdr")
-    if rec.mode[1:3] == "VVI"
-        push!(vvi_fn_arr, fn)
-        mkpconverter(fn, rec.mode)
-    elseif rec.mode[1:3] == "AAI"
-        println(fn)
-        push!(aai_fn_arr, fn)
-        mkpconverter(fn, rec.mode)
-    end
-end
+
+
 
 function mkpconverter(filen::String, mode::String)
     filepath_hdr = joinpath(path, "bin", filen * ".hdr")
@@ -46,6 +35,8 @@ function mkpconverter(filen::String, mode::String)
         base_rhythm.pacing = BaseRhythm.Pacing.vent # зависит от режима стимуляции
     elseif mode[1:3] == "AAI"
         base_rhythm.pacing = BaseRhythm.Pacing.atrial
+    elseif mode[1:3] == "DDD"
+        base_rhythm.pacing = BaseRhythm.Pacing.dual
     end
     base_rhythm.mask = trues(length(mkp.QRS_onset))
 
@@ -78,4 +69,19 @@ function mkpconverter(filen::String, mode::String)
     new_author = "res" # !!!
     path_ = api.generate_fullpath(joinpath(path, "mkp"), filen, new_author) # функция сама создаст нужные папки
     api.write_stdmkp_json(path_, new_mkp)
+end
+
+
+for fn in filenames_array
+    filepath = joinpath(path, "bin", fn * ".hdr")
+    rec = PM.get_data_from(filepath, "hdr")
+    mkpconverter(fn, rec.mode)
+    # if rec.mode[1:3] == "VVI"
+    #     push!(vvi_fn_arr, fn)
+    #     mkpconverter(fn, rec.mode)
+    # elseif rec.mode[1:3] == "AAI"
+    #     println(fn)
+    #     push!(aai_fn_arr, fn)
+    #     mkpconverter(fn, rec.mode)
+    # end
 end

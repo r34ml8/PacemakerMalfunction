@@ -194,6 +194,8 @@ end
 d = daughter(5)
 s = son(2)
 
+typeof(d) == daughter
+
 function showAge(ch::child)
     println(ch.age)
 end

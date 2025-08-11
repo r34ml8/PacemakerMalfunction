@@ -82,11 +82,15 @@ function findStimulAfter(stimul_index::Int64, stimuls::Union{Nothing, Vector{Sti
 end
 
 function VCheck(stimul::Stimul)
-    return stimul.type in ("V", "VR") ? true : false
+    return stimul.malfunction.normal || !(stimul.type in ("VN", "VU")) ? true : false
 end
 
 function ACheck(stimul::Stimul)
-    return stimul.type in ("A", "AR") ? true : false
+    return stimul.type[1] == 'A' ? true : false
+
+    # if typeof(stimul.malfunction) == MalfunctionsAAI
+    #     return stimul.malfunction.normal || (stimul.type in ("A", "AR") && !stimul.malfunction.unrelized) ? true : false
+    # end
 end
 
 function mediana(vec)

@@ -7,60 +7,13 @@ function analyzeVVI(stimuls::Vector{Stimul},
         prevQRS = stimul.QRS_index > 1 ? QRSes[stimul.QRS_index - 1] : nothing
         
         if satisfyCheck(curQRS, prevQRS)
-            stimul.type = "VR"
-
-            print(stimul.index, " ")
-
             stimul.malfunction.normal = normalCheckV(stimul, stimuls, curQRS, prevQRS, interval50, fs)
-            if stimul.malfunction.normal
-                # print("normal ")
-            else
-                print("anormal ")
-            end
-
             stimul.malfunction.undersensing = undersensingCheckV(stimul, prevQRS, base, fs)
-            if stimul.malfunction.undersensing
-                print("undersensing ")
-            else
-                # print("no undersensing ")
-            end
-
-            stimul.malfunction.exactlyUndersensing = exactlyUndersensingCheckV(stimul, stimuls, curQRS, prevQRS, interval50)
-            if stimul.malfunction.exactlyUndersensing
-                print("exactly undersensing ")
-            else
-                # print("exactly no undersensing ")
-            end
-
+            stimul.malfunction.exactlyUndersensing = exactlyUndersensingCheckV(stimul, stimuls, prevQRS, interval50)
             stimul.malfunction.oversensing = oversensingCheckV(stimul, stimuls, prevQRS, base, fs)
-            if stimul.malfunction.oversensing
-                print("oversensing ")
-            else
-                # println("no oversensing ")
-            end
-
             stimul.malfunction.hysteresis = hysteresisCheckV(stimul, curQRS, prevQRS, base, fs)
-            if stimul.malfunction.hysteresis
-                print("hysteresis ")
-            else
-                # print("no hysteresis ")
-            end
-
             stimul.malfunction.noAnswer = noAnswerCheckV(stimul, curQRS, prevQRS, fs)
-            if stimul.malfunction.noAnswer
-                print("has no answer ")
-            else
-                # print("has answer ")
-            end
-
-            stimul.malfunction.unrelized = unrelizedCheckV(stimul, curQRS, prevQRS, fs)
-            if stimul.malfunction.unrelized
-                print("unrelized ")
-            else
-                # print("relized ")
-            end
-
-            println()
+            stimul.malfunction.unrelized = unrelizedCheckV(stimul, prevQRS)
         else
             stimul.type = "U"
         end
@@ -71,32 +24,41 @@ function normalCheckV(stimul::Stimul, stimuls::Vector{Stimul},
     curQRS::QRS, prevQRS::QRS, interval::Tuple{Int64, Int64}, fs::Float64
 )
     if !isInsideInterval(stimul, curQRS, MS2P.((0, MS70), fs))
+        stimul.type = "V" # использую это условие в т.ч. как проверку на реализованность
+        @info 1
         return false
     end
 
+    stimul.type = "VR"
+
     VBefore = findStimulBefore(stimul.index, stimuls, 'V')
     if isInsideInterval(stimul, VBefore, interval)
+        @info 2
         return true
     end
 
     if isInsideInterval(stimul, prevQRS, interval)
+        @info 3
         return true
     end
 
     VAfter = findStimulAfter(stimul.index, stimuls, 'V')
     if isInsideInterval(stimul, VAfter, interval)
+        @info 4
         return true
     end
 
+    @info 5
     return false
 end
 
 function undersensingCheckV(stimul::Stimul,
     prevQRS::Union{Nothing, QRS}, base::Float64, fs::Float64
 )
-    if !stimul.malfunction.normal
+    if !stimul.malfunction.normal && stimul.stimulVerification == "V"
         res = isInsideInterval(stimul, prevQRS, MS2P.((MS200, base - MS300), fs))
-        stimul.type = res ? "V" : "VR"
+
+        stimul.hasMalfunctions = stimul.hasMalfunctions || res
         return res
     end
 
@@ -104,25 +66,24 @@ function undersensingCheckV(stimul::Stimul,
 end
 
 function exactlyUndersensingCheckV(stimul::Stimul,
-    stimuls::Vector{Stimul}, curQRS::QRS, prevQRS::Union{Nothing, QRS},
+    stimuls::Vector{Stimul}, prevQRS::Union{Nothing, QRS},
     interval::Tuple{Int64, Int64}
 )
     if stimul.malfunction.undersensing
-        stimulBefore = findStimulBefore(stimul.index, stimuls)
-        stimulAfter = findStimulAfter(stimul.index, stimuls)
-
-        if (isInsideInterval(stimul, stimulBefore, interval) ||
-            isInsideInterval(stimul, stimulAfter, interval)
+        if (isInsideInterval(stimul, findStimulBefore(stimul.index, stimuls), interval) ||
+            isInsideInterval(stimul, findStimulAfter(stimul.index, stimuls), interval)
         )
-            stimul.type = "V"
+            stimul.hasMalfunctions = true
             return true
         end
     end
 
-    if stimul.malfunction.normal || stimul.malfunction.undersensing
-        interval = interval .- curQRS.RR 
+    if ((stimul.malfunction.normal || stimul.malfunction.undersensing) &&
+        !isnothing(prevQRS) && !isnothing(prevQRS.RR)
+        )
+        interval = interval .- prevQRS.RR
         if isInsideInterval(stimul, prevQRS, interval)
-            stimul.type = "V"
+            stimul.hasMalfunctions = true
             return true
         end
     end
@@ -139,8 +100,7 @@ function oversensingCheckV(stimul::Stimul, stimuls::Vector{Stimul},
 
             if (isMore(stimul, VBefore, MS2P(base + MS60, fs)) &&
                 (VBefore.QRS_index == prevQRS.index))
-                stimul.type = "V"
-
+                stimul.hasMalfunctions = true
                 return true
             end
         end
@@ -152,20 +112,21 @@ end
 function hysteresisCheckV(stimul::Stimul, curQRS::QRS,
     prevQRS::Union{Nothing, QRS}, base::Float64, fs::Float64
 )
-    if stimul.malfunction.normal
+    if !stimul.malfunction.normal && stimul.stimulVerification == "V"
         if !isnothing(prevQRS)
             dist = abs(stimul.position - prevQRS.position)
             dist = min(curQRS.RR, dist)
+            # опять же вопрос об RR 
 
-            if (
-                (MS2P(base + MS60, fs) <= dist <= MS2P(base + MS300, fs)) &&
-                (!isMore(stimul, curQRS, MS2P(MS30, fs)) &&
-                stimul.position > curQRS.position ||
-                curQRS.type[1] == 'C') &&
-                !(prevQRS.type[1] in ('V', 'F'))
+            if ((MS2P(base + MS60, fs) <= dist <= MS2P(base + MS300, fs)) &&
+                !(prevQRS.type[1] in "VF")
             )
-                stimul.type = "V"
-                return true
+                if ((curQRS.position - stimul.position > MS2P(-MS30, fs)) ||
+                    curQRS.type[1] == 'C'
+                    )
+                    stimul.hasMalfunctions = true
+                    return true
+                end
             end
         end
     end
@@ -176,36 +137,32 @@ end
 function noAnswerCheckV(stimul::Stimul, curQRS::QRS,
     prevQRS::Union{Nothing, QRS}, fs::Float64
 )
-    if (
-        (stimul.type == "VR" || stimul.malfunction.normal) &&
+    if ((!stimul.hasMalfunctions || stimul.malfunction.normal) &&
+        stimul.stimulVerification == "V" &&
         isMore(stimul, curQRS, MS2P(MS80, fs)) &&
         (isnothing(prevQRS) ||
         stimul.position > ST(prevQRS))
     )
         stimul.type = "VN" 
+
         return true
     end
 
     return false
 end
 
-function unrelizedCheckV(stimul::Stimul, curQRS::QRS,
-    prevQRS::Union{Nothing, QRS}, fs::Float64
-)
-    if stimul.type == "VR" || stimul.malfunction.normal
-        if (!isMore(stimul, curQRS, MS2P(MS80, fs)) &&
-            curQRS.position + MS2P(MS15, fs) < stimul.position
+function unrelizedCheckV(stimul::Stimul,
+    prevQRS::Union{Nothing, QRS}
+    )
+    # более корректная проверка на нахождение стимула внутри
+    # комплекса в контексте моей Structures.jl/findQRS()    
+    if ((!stimul.hasMalfunctions || stimul.malfunction.normal) &&
+        stimul.stimulVerification == "V" && !isnothing(prevQRS) &&
+        prevQRS.position <= stimul.position <= ST(prevQRS)
         )
-            stimul.type = "VU"
-            return true
-        else
-            if (!isnothing(prevQRS) &&
-                stimul.position < ST(prevQRS)
-            )
-                stimul.type = "VU"
-                return true
-            end
-        end
+        stimul.type = "VU"
+
+        return true
     end
 
     return false

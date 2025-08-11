@@ -8,19 +8,10 @@ function pacemaker_analyze(hdr_path::String, mkp_path::String)
         return getproperty.(stimuls, :type), DDDtoMalfVec(stimuls, QRSes)
     elseif rec.mode[1:3] == "VVI"
         analyzeVVI(stimuls, QRSes, rec.base, rec.fs)
-        for stimul in stimuls
-            if stimul.type == "V"
-                stimul.type = "VR"
-            end
-        end
     elseif rec.mode[1:3] == "AAI"
         analyzeAAI(stimuls, QRSes, rec.base, rec.fs)
-        for stimul in stimuls
-            if stimul.type == "A"
-                stimul.type = "AR"
-            end
-        end
     end
+    @info stimuls
 
     return getproperty.(stimuls, :type), VAtoMalfVec(stimuls, QRSes, rec.mode)
 end
@@ -37,9 +28,9 @@ struct StimIssue
                 QRSi = stimuls[i].QRS_index
 
                 mask[QRSi] = 1
-                if QRSi > 1
-                    mask[QRSi - 1] = 1
-                end
+                # if QRSi > 1
+                #     mask[QRSi - 1] = 1
+                # end
             end
         end
 

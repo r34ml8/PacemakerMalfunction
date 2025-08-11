@@ -18,10 +18,6 @@ path = "C:\\Users\\user\\course\\STDECGDB"
 vvi_fn_arr = String[]
 aai_fn_arr = String[]
 
-
-
-
-
 function mkpconverter(filen::String, mode::String)
     filepath_hdr = joinpath(path, "bin", filen * ".hdr")
     filepath_json = joinpath(path, "mkp", filen * "." * author, filen * ".json")
@@ -59,7 +55,6 @@ function mkpconverter(filen::String, mode::String)
         end
     end
 
-
     new_mkp = deepcopy(mkp)
     new_mkp.stimtype = stimtype
     new_mkp.events = [eventA]
@@ -71,17 +66,11 @@ function mkpconverter(filen::String, mode::String)
     api.write_stdmkp_json(path_, new_mkp)
 end
 
-
 for fn in filenames_array
     filepath = joinpath(path, "bin", fn * ".hdr")
     rec = PM.get_data_from(filepath, "hdr")
     mkpconverter(fn, rec.mode)
-    # if rec.mode[1:3] == "VVI"
-    #     push!(vvi_fn_arr, fn)
-    #     mkpconverter(fn, rec.mode)
-    # elseif rec.mode[1:3] == "AAI"
-    #     println(fn)
-    #     push!(aai_fn_arr, fn)
-    #     mkpconverter(fn, rec.mode)
-    # end
 end
+
+mkpconverter("oxst003269_4", "VVI")
+

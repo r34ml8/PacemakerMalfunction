@@ -75,6 +75,7 @@ mutable struct Stimul <: Signal
     QRS_index::Int64
     malfunction::Malfunctions
     stimulVerification::Union{Nothing, String}
+    hasMalfunctions::Bool
 
     function Stimul(mkpBase::API.StdMkp, _index::Int64, QRSes::Vector{QRS}, mode::String, fs::Float64)
         _type = "U"
@@ -92,12 +93,12 @@ mutable struct Stimul <: Signal
             _malfunction = MalfunctionsDDD()
         end
 
-        return new(_index, _type, _position, _QRS_index, _malfunction, nothing)
+        return new(_index, _type, _position, _QRS_index, _malfunction, _type, false)
     end
 end
 
 function findQRS(stimulPosition::Int64, QRSes::Vector{QRS}, fs::Float64)
-    errb = floor(Int, 0.03 * fs)
+    errb = floor(Int, 0.030 * fs)
 
     for (i, pos) in enumerate(getproperty.(QRSes, :position))
         if pos + errb >= stimulPosition

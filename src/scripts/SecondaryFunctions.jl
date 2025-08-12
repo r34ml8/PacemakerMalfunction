@@ -118,6 +118,16 @@ function inQRS(QRS_i::Int64, stimul::Union{Nothing, Stimul})
     return !isnothing(stimul) && stimul.QRS_index == QRS_i ? true : false
 end
 
+function findInQRS(_QRS::QRS, stimuls::Vector{Stimul}, typeCh::Char=' ')
+    for i in _QRS.stimul_indexes
+        if typeCh == ' ' || stimuls[i].type[1] == typeCh
+            return stimuls[i]
+        end
+    end
+
+    return nothing
+end
+
 function goodAV(stimul::Stimul, _QRS::QRS, rec::EcgRecord, AV50::Tuple{Int64, Int64})
     if (isnothing(_QRS.AV) ||
         _QRS.AV in AV50 ||

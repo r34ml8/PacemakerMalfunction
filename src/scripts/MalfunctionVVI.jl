@@ -116,7 +116,6 @@ function hysteresisCheckV(stimul::Stimul, curQRS::QRS,
         if !isnothing(prevQRS)
             dist = abs(stimul.position - prevQRS.position)
             dist = min(curQRS.RR, dist)
-            # опять же вопрос об RR 
 
             if ((MS2P(base + MS60, fs) <= dist <= MS2P(base + MS300, fs)) &&
                 !(prevQRS.type[1] in "VF")

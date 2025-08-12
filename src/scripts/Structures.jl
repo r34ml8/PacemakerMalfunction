@@ -24,6 +24,7 @@ mutable struct QRS <: Signal
     pos_end::Int64
     RR::Union{Int64, Nothing}
     AV::Union{Int64, Nothing}
+    stimuls_vec::Vector{Int64}
 
     function QRS(mkpBase::API.StdMkp, _index::Int64)
         _type = mkpBase.QRS_form[_index]
@@ -31,7 +32,7 @@ mutable struct QRS <: Signal
         _pos_end = mkpBase.QRS_end[_index]
         _RR = _index > 1 ? _pos_onset - mkpBase.QRS_onset[_index - 1] : nothing
 
-        return new(_index, _type, _pos_onset, _pos_end, _RR, nothing)
+        return new(_index, _type, _pos_onset, _pos_end, _RR, nothing, Int64[])
     end
 end
 
@@ -82,7 +83,7 @@ mutable struct Stimul <: Signal
         # _type = mkpBase.stimtype[_index]
         _position = mkpBase.stimpos[_index]
         _QRS_index = findQRS(_position, QRSes, fs).index
-
+        
         if mode[1:3] == "VVI"
             _malfunction = MalfunctionsVVI()
             _type = "V"
@@ -131,8 +132,11 @@ function mkpSignals(mkpBase::API.StdMkp, rec::EcgRecord)
     _stimuls = Vector{Stimul}(undef, n)
     # stimulForms = classify_spikes
     for i in 1:n
-        _stimuls[i] = Stimul(mkpBase, i, _QRSes, rec.mode, rec.fs)
+        stimul = _stimuls[i]
+        stimul = Stimul(mkpBase, i, _QRSes, rec.mode, rec.fs)
+        push!(_QRSes[stimul.QRS_index].stimul_indexes, i)
     end
+
     @info rec.mode
     rec.base = checkBase(_stimuls, rec.base, rec.mode)
     if rec.mode[1:3] == "DDD"

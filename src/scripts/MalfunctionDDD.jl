@@ -78,6 +78,24 @@ function undersensingVCheckDV(stimul::Stimul, curQRS::QRS,
     return false
 end
 
+function oversensingACheckDA(stimul::Stimul, _goodAV::Bool,
+    ABefore::Union{Nothing, Stimul}, VBefore::Union{Nothing, Stimul},
+    prevQRS::Union{Nothing, QRS}
+    )
+    if !isnothing(prevQRS) && (_goodAV || stimul.stimulVerification == "A")
+        _ABefore = nothing
+        if inQRS(prevQRS.index, ABefore)
+            _ABefore = ABefore
+        elseif !isnothing(ABefore) && ABefore.QRS_index > prevQRS.index
+            _ABefore = ABefore
+            while !inQRS(prevQRS.index, _ABefore)
+                findStimulBefore(_ABefore, stimuls, 'A')
+                if _ABefore.QRS_index < prevQRS.index
+            end
+        end
+    end
+end
+
 
 function normalCheckDV(stimul::Stimul, curQRS::QRS,
     p50::Tuple{Int64, Int64}, ABefore::Union{Nothing, Stimul},

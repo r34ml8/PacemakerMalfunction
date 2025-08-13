@@ -2,6 +2,7 @@ function analyzeDDD(stimuls::Vector{Stimul}, QRSes::Vector{QRS}, rec::EcgRecord)
     AV50 = MS2P.((rec.intervalAV[1] - MS50, rec.intervalAV[2] + MS50), rec.fs)
     base50 = MS2P.((rec.base - MS50, rec.base + MS50), rec.fs)
     p50 = MS2P.((0, MS50), rec.fs)
+    errb = floor(Int, 0.03 * rec.fs)
 
     @info typeof.([AV50, base50, p50])
     stimulClassifier(stimuls, QRSes, AV50, base50, p50)
@@ -18,23 +19,23 @@ function analyzeDDD(stimuls::Vector{Stimul}, QRSes::Vector{QRS}, rec::EcgRecord)
         if stimul.type == "AR"
             _goodAV = goodAV(stimul, curQRS, rec, AV50)
 
-            stimul.malfunction.normal = normalCheckDA(stimul, _goodAV, ABefore, base50, prevQRS, rec)
+            stimul.malfunction.normal = normalACheckDA(stimul, _goodAV, ABefore, base50, prevQRS, rec)
             stimul.malfunction.oversensingV = oversensingVCheckDA(stimul, _goodAV, ABefore, rec, prevQRS)
-            stimul.malfunction.oversensingA = oversensingACheckDA(stimul, _goodAV, ABefore, VBefore, prevQRS, rec)
+            stimul.malfunction.oversensingA = oversensingACheckDA(stimul, _goodAV, stimuls, VBefore, prevQRS, rec)
             stimul.malfunction.undersensingA = undersensingACheckDA(stimul, QRSes, ABefore, base50, curQRS, rec)
             stimul.malfunction.exactlyUndersensingA = exactlyUndersensingACheckDA(stimul, curQRS, rec.fs)
-            stimul.malfunction.undersensingV = undersensingVCheckDA(stimul, prevQRS, VBefore, rec)
-        elseif stimul.type == "VR"
-            stimul.malfunction.normal = normalCheckDV(stimul, curQRS, p50, ABefore, AV50)
-            stimul.malfunction.undersensingV = undersensingVCheckDV(stimul, curQRS, ABefore, VBefore, rec.fs, stimuls)
+            stimul.malfunction.undersensingV = undersensingVCheckDA(stimul, prevQRS, stimuls, rec)
+        elseif stimul.type[1] == 'V'
+            stimul.malfunction.normal = normalVCheckDV(stimul, curQRS, p50, ABefore, AV50)
             stimul.malfunction.oversensingAV = oversensingAVCheckDV(stimul, prevQRS, VBefore, stimuls, rec)
+            stimul.malfunction.undersensingV = undersensingVCheckDV(stimul, curQRS, ABefore, VBefore, rec.fs, stimuls)
             stimul.malfunction.noAnswerV = noAnswerVCheckDV(stimul, curQRS, prevQRS, rec.fs)
-            stimul.malfunction.unrelizedV = unrelizedVCheckDV(stimul, curQRS, prevQRS)
+            stimul.malfunction.unrelizedV = unrelizedVCheckDV(stimul, curQRS, prevQRS, errb)
         end
     end
 end
 
-function normalCheckDA(stimul::Stimul, _goodAV::Bool,
+function normalACheckDA(stimul::Stimul, _goodAV::Bool,
     ABefore::Union{Nothing, Stimul}, base50::Tuple{Int64, Int64},
     prevQRS::Union{Nothing, QRS}, rec::EcgRecord
     )
@@ -89,19 +90,21 @@ function oversensingACheckDA(stimul::Stimul, _goodAV::Bool,
     stimuls::Vector{Stimul}, VBefore::Union{Nothing, Stimul},
     prevQRS::Union{Nothing, QRS}, rec::EcgRecord
     )
-    if !isnothing(prevQRS) && (_goodAV || stimul.stimulVerification == "A")
-        _ABefore = findInQRS(prevQRS, stimuls, 'A')
+    if stimul.malfunction.normal || !stimul.hasMalfunctions    
+        if !isnothing(prevQRS) && (_goodAV || stimul.stimulVerification == "A")
+            _ABefore = findInQRS(prevQRS, stimuls, 'A')
 
-        if isnothing(_ABefore) && isMore(stimul, prevQRS, MS2P(rec.base + MS100, rec.fs))
-            stimul.hasMalfunctions = true
-            return true
-        end
+            if isnothing(_ABefore) && isMore(stimul, prevQRS, MS2P(rec.base + MS100, rec.fs))
+                stimul.hasMalfunctions = true
+                return true
+            end
 
-        if (isMore(stimul, ABefore, MS2P(rec.base + MS200, rec.fs)) &&
-            (isnothing(VBefore) || !VBefore.malfunction.oversensingAV)
-            )
-            stimul.hasMalfunctions = true
-            return true
+            if (isMore(stimul, _ABefore, MS2P(rec.base + MS200, rec.fs)) &&
+                (isnothing(VBefore) || !VBefore.malfunction.oversensingAV)
+                )
+                stimul.hasMalfunctions = true
+                return true
+            end
         end
     end
 
@@ -129,8 +132,9 @@ end
 function exactlyUndersensingACheckDA(stimul::Stimul,
     curQRS::QRS, fs::Float64
     )
-    if ((stimul.malfunction.normal || stimul.malfunction.undersensingA) &&
-        curQRS.type[1] in "SAWB" && isInsideInterval(stimul, curQRS, MS2P.((0, MS80), fs))
+    if ((stimul.malfunction.normal || stimul.malfunction.undersensingA ||
+        !stimul.hasMalfunctions) && curQRS.type[1] in "SAWB" &&
+        isInsideInterval(stimul, curQRS, MS2P.((0, MS80), fs))
         )
         stimul.hasMalfunctions = true
         return true
@@ -140,10 +144,10 @@ function exactlyUndersensingACheckDA(stimul::Stimul,
 end
 
 function undersensingVCheckDA(stimul::Stimul, 
-    prevQRS::Union{Nothing, QRS}, VBefore::Union{Nothing, Stimul},
+    prevQRS::Union{Nothing, QRS}, stimuls::Vector{Stimul},
     rec::EcgRecord
     )
-    if (stimul.malfunction.normal &&
+    if ((stimul.malfunction.normal || !stimul.hasMalfunctions) &&
         isInsideInterval(stimul, prevQRS, MS2P.((0, rec.base - MS200 - rec.intervalAV[2]), rec.fs)) &&
         prevQRS.type[1] != 'C'
         )
@@ -155,14 +159,19 @@ function undersensingVCheckDA(stimul::Stimul,
     return false
 end
 
-function normalCheckDV(stimul::Stimul, curQRS::QRS,
+function normalVCheckDV(stimul::Stimul, curQRS::QRS,
     p50::Tuple{Int64, Int64}, ABefore::Union{Nothing, Stimul},
     AV50::Tuple{Int64, Int64}
     )
     if (isInsideInterval(stimul, curQRS, p50) ||
         isInsideInterval(stimul, ABefore, AV50)
         )
+        stimul.type = "VR"
         return true
+    end
+
+    if stimul.type == "V"
+        # stimul.type = "VU"
     end
 
     return false
@@ -172,7 +181,7 @@ function oversensingAVCheckDV(stimul::Stimul, prevQRS::QRS,
     VBefore::Union{Nothing, Stimul}, stimuls::Vector{Stimul},
     rec::EcgRecord
     )
-    if stimul.malfunction.normal
+    if stimul.malfunction.normal || !stimul.hasMalfunctions
         _min = MS2P((rec.base + MS100 + rec.intervalAV[2]), rec.fs)
         if isMore(stimul, prevQRS, _min)
             stimul.hasMalfunctions = true
@@ -196,8 +205,10 @@ function noAnswerVCheckDV(stimul::Stimul, curQRS::QRS,
     )
     if ((stimul.malfunction.normal || !stimul.hasMalfunctions) &&
         isMore(stimul, curQRS, MS2P(MS80, fs)) &&
+        stimul.position < curQRS.position &&
         (isnothing(prevQRS) || stimul.position > ST(prevQRS))
         )
+        stimul.type = "VN"
         stimul.hasMalfunctions = true
         return true
     end
@@ -206,13 +217,13 @@ function noAnswerVCheckDV(stimul::Stimul, curQRS::QRS,
 end
 
 function unrelizedVCheckDV(stimul::Stimul, curQRS::QRS,
-    prevQRS::Union{Nothing, QRS}
+    prevQRS::Union{Nothing, QRS}, errb::Int64
     )
     if ((stimul.malfunction.normal || !stimul.hasMalfunctions) &&
-        (curQRS.position <= stimul.position <= curQRS.position ||
-        stimul.position > ST(prevQRS)) 
+        (curQRS.position + errb <= stimul.position <= curQRS.pos_end ||
+        stimul.position < ST(prevQRS)) 
         )
-        stimul.hasMalfunctions = true
+        stimul.type = "VU"
         return true
     end
 

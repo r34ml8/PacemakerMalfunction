@@ -24,7 +24,7 @@ mutable struct QRS <: Signal
     pos_end::Int64
     RR::Union{Int64, Nothing}
     AV::Union{Int64, Nothing}
-    stimuls_vec::Vector{Int64}
+    stimul_indexes::Vector{Int64}
 
     function QRS(mkpBase::API.StdMkp, _index::Int64)
         _type = mkpBase.QRS_form[_index]
@@ -66,7 +66,7 @@ end
     exactlyUndersensingA::Bool = false
     oversensingAV::Bool = false
     noAnswerV::Bool = false
-    unrelized::Bool = false
+    unrelizedV::Bool = false
 end
 
 mutable struct Stimul <: Signal
@@ -132,9 +132,8 @@ function mkpSignals(mkpBase::API.StdMkp, rec::EcgRecord)
     _stimuls = Vector{Stimul}(undef, n)
     # stimulForms = classify_spikes
     for i in 1:n
-        stimul = _stimuls[i]
-        stimul = Stimul(mkpBase, i, _QRSes, rec.mode, rec.fs)
-        push!(_QRSes[stimul.QRS_index].stimul_indexes, i)
+        _stimuls[i] = Stimul(mkpBase, i, _QRSes, rec.mode, rec.fs)
+        push!(_QRSes[_stimuls[i].QRS_index].stimul_indexes, i)
     end
 
     @info rec.mode

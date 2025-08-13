@@ -72,5 +72,3 @@ for fn in filenames_array
     mkpconverter(fn, rec.mode)
 end
 
-mkpconverter("oxst003269_4", "VVI")
-

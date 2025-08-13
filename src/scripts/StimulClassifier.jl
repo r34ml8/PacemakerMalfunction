@@ -89,7 +89,7 @@ function stimulClassifier(stimuls::Vector{Stimul},
             # @info stimul.type, stimul.position
 
             if exactV
-                stimul.type = "VR"
+                stimul.type = "V"
             elseif exactA
                 stimul.type = "AR"
             elseif likelyV

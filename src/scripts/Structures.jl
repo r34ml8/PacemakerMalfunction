@@ -25,14 +25,15 @@ mutable struct QRS <: Signal
     RR::Union{Int64, Nothing}
     AV::Union{Int64, Nothing}
     stimul_indexes::Vector{Int64}
+    index_withX::Int64
 
-    function QRS(mkpBase::API.StdMkp, _index::Int64)
-        _type = mkpBase.QRS_form[_index]
-        _pos_onset = mkpBase.QRS_onset[_index]
-        _pos_end = mkpBase.QRS_end[_index]
-        _RR = _index > 1 ? _pos_onset - mkpBase.QRS_onset[_index - 1] : nothing
+    function QRS(mkpBase::API.StdMkp, _index_withX::Int64)
+        _type = mkpBase.QRS_form[_index_withX]
+        _pos_onset = mkpBase.QRS_onset[_index_withX]
+        _pos_end = mkpBase.QRS_end[_index_withX]
+        _RR = _index_withX > 1 ? _pos_onset - mkpBase.QRS_onset[_index_withX - 1] : nothing
 
-        return new(_index, _type, _pos_onset, _pos_end, _RR, nothing, Int64[])
+        return new(0, _type, _pos_onset, _pos_end, _RR, nothing, Int64[], _index_withX)
     end
 end
 
@@ -123,9 +124,15 @@ end
 
 function mkpSignals(mkpBase::API.StdMkp, rec::EcgRecord)
     n = length(mkpBase.QRS_form)
-    _QRSes = Vector{QRS}(undef, n)
+    _QRSes = QRS[]
+    j = 1
     for i in 1:n
-        _QRSes[i] = QRS(mkpBase, i)
+        _QRS = QRS(mkpBase, i)
+        if _QRS.type != "X"
+            _QRS.index = j
+            push!(_QRSes, _QRS)
+            j += 1
+        end
     end
 
     n = length(mkpBase.stimtype)

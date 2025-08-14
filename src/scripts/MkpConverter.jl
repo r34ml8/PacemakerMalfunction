@@ -72,3 +72,4 @@ for fn in filenames_array
     mkpconverter(fn, rec.mode)
 end
 
+mkpconverter("30018249_2", "DDD")

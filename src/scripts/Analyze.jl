@@ -22,12 +22,12 @@ struct StimIssue
     mask::BitVector
 
     function StimIssue(issue::String, channel::String, malf::BitVector, stimuls::Vector{Stimul}, QRSes::Vector{QRS})
-        mask = BitVector(undef, length(QRSes))
+        mask = BitVector(undef, QRSes[end].index_withX)
         for i in eachindex(malf)
             if malf[i]
-                QRSi = stimuls[i].QRS_index
+                real_index = QRSes[stimuls[i].QRS_index].index_withX
 
-                mask[QRSi] = 1
+                mask[real_index] = 1
                 # if QRSi > 1
                 #     mask[QRSi - 1] = 1
                 # end
